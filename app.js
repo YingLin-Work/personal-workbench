@@ -1979,6 +1979,37 @@ function migrateHabitLogs() {
   if (migrated) saveState();
 }
 
+// 渲染单个习惯卡片
+function habitCardHTML(h) {
+  const today = todayStr();
+  const todayLogs = (state.health.habitLogs || {})[today] || {};
+  const log = todayLogs[h.id];
+  let done = !!log;
+  let info = '';
+  if (h.type === 'water') {
+    const cups = log ? Math.floor((log.count || 0) / 300) : 0;
+    const target = h.config.cups || 8;
+    done = cups >= target;
+    info = `<span class="habit-card-progress">${Math.min(cups, target)}/${target} 杯</span>`;
+  } else if (h.type === 'reading' && log && log.duration) {
+    info = `<span class="habit-card-progress">${log.duration}分钟</span>`;
+  } else if ((h.type === 'sleep' || h.type === 'wake') && log && log.time) {
+    info = `<span class="habit-card-progress">${log.time}</span>`;
+  } else if (done) {
+    info = `<span class="habit-card-progress">✓ 已完成</span>`;
+  }
+  return `<div class="habit-card ${done ? 'done' : ''}" onclick="toggleHabit('${h.id}')">
+    <div class="habit-card-check">✓</div>
+    <div class="habit-card-icon">${h.icon}</div>
+    <div class="habit-card-name">${escapeHtml(h.name)}</div>
+    <div class="habit-card-goal">${info || escapeHtml(h.goal || '')}</div>
+    <div class="habit-card-actions">
+      <button class="habit-card-edit" onclick="event.stopPropagation();editHabit('${h.id}')">✎ 编辑</button>
+      <button class="habit-card-del" onclick="event.stopPropagation();deleteHabit('${h.id}')">删除</button>
+    </div>
+  </div>`;
+}
+
 function renderHabits() {
   if (!state.health.habits) state.health.habits = defaultUserData().health.habits;
   if (!state.health.habitLogs) state.health.habitLogs = {};
@@ -1987,41 +2018,27 @@ function renderHabits() {
   state.health.habits.forEach(h => { if (!h.type) { h.type = 'simple'; h.config = {}; } });
 
   const habits = state.health.habits;
-  const today = todayStr();
-  const todayLogs = state.health.habitLogs[today] || {};
+  const preset = habits.filter(h => h.type === 'sleep' || h.type === 'wake');
+  const other = habits.filter(h => h.type !== 'sleep' && h.type !== 'wake');
 
+  const presetEl = document.getElementById('habitPreset');
   const grid = document.getElementById('habitGrid');
-  if (!habits.length) {
-    grid.innerHTML = '<div class="empty-tip" style="grid-column:span 2;">点击上方「+ 添加习惯」开始</div>';
-    return;
-  }
-  grid.innerHTML = habits.map(h => {
-    const log = todayLogs[h.id];
-    let done = !!log;
-    let info = '';
-    if (h.type === 'water') {
-      const cups = log ? Math.floor((log.count || 0) / 300) : 0;
-      const target = h.config.cups || 8;
-      done = cups >= target;
-      info = `<span class="habit-card-progress">${Math.min(cups, target)}/${target} 杯</span>`;
-    } else if (h.type === 'reading' && log && log.duration) {
-      info = `<span class="habit-card-progress">${log.duration}分钟</span>`;
-    } else if ((h.type === 'sleep' || h.type === 'wake') && log && log.time) {
-      info = `<span class="habit-card-progress">${log.time}</span>`;
-    } else if (done) {
-      info = `<span class="habit-card-progress">✓ 已完成</span>`;
+
+  // 早睡/早起 预设习惯 → 添加习惯按钮上方
+  if (presetEl) {
+    if (preset.length) {
+      presetEl.innerHTML = '<div class="habit-preset-label">作息习惯</div>' + preset.map(habitCardHTML).join('');
+    } else {
+      presetEl.innerHTML = '';
     }
-    return `<div class="habit-card ${done ? 'done' : ''}" onclick="toggleHabit('${h.id}')">
-      <div class="habit-card-check">✓</div>
-      <div class="habit-card-icon">${h.icon}</div>
-      <div class="habit-card-name">${escapeHtml(h.name)}</div>
-      <div class="habit-card-goal">${info || escapeHtml(h.goal || '')}</div>
-      <div class="habit-card-actions">
-        <button class="habit-card-edit" onclick="event.stopPropagation();editHabit('${h.id}')">✎ 编辑</button>
-        <button class="habit-card-del" onclick="event.stopPropagation();deleteHabit('${h.id}')">删除</button>
-      </div>
-    </div>`;
-  }).join('');
+  }
+
+  // 其他习惯 → 添加习惯按钮下方
+  if (!other.length) {
+    grid.innerHTML = '<div class="empty-tip" style="grid-column:span 2;">点击上方「+ 添加习惯」开始</div>';
+  } else {
+    grid.innerHTML = other.map(habitCardHTML).join('');
+  }
 }
 
 function toggleHabit(id) {
@@ -2163,15 +2180,45 @@ function renderCampingGear() {
   const el = document.getElementById('campingGear');
   if (!el) return;
   const logs = campingLogs();
+  const gear = (state.health.camping && state.health.camping.gear) || '';
   el.innerHTML = `
     <div class="camping-gear-title">🎒 露营装备</div>
     <div class="camping-gear-stats">
       <div class="camping-gear-stat"><span class="cg-num">${logs.length}</span><span class="cg-label">露营次数</span></div>
       <div class="camping-gear-stat"><span class="cg-num">${logs.length ? logs[logs.length - 1].date.slice(5) : '—'}</span><span class="cg-label">最近露营</span></div>
     </div>
-    <div class="camping-gear-icons">⛺ 🏕️ 🧺 🔦 ♨️</div>
+    <div class="camping-gear-icons">${gear ? escapeHtml(gear) : '未设置装备清单，点击下方编辑'}</div>
+    <button class="health-plan-edit" onclick="editCampingGear()">✎ 编辑装备</button>
   `;
 }
+
+// 编辑露营装备清单（与运动计划的编辑交互一致）
+function editCampingGear() {
+  if (!state.health.camping) state.health.camping = { logs: [] };
+  if (!('gear' in state.health.camping)) state.health.camping.gear = '';
+  document.getElementById('campingGearTitle').textContent = '编辑露营装备';
+  document.getElementById('campingGearInput').value = state.health.camping.gear || '';
+  document.getElementById('campingGearModal').classList.add('show');
+}
+document.getElementById('campingGearClose') && document.getElementById('campingGearClose').addEventListener('click', () => {
+  document.getElementById('campingGearModal').classList.remove('show');
+});
+document.getElementById('campingGearCancel') && document.getElementById('campingGearCancel').addEventListener('click', () => {
+  document.getElementById('campingGearModal').classList.remove('show');
+});
+document.getElementById('campingGearSave') && document.getElementById('campingGearSave').addEventListener('click', () => {
+  if (!state.health.camping) state.health.camping = { logs: [] };
+  state.health.camping.gear = document.getElementById('campingGearInput').value.trim() || '';
+  saveState();
+  document.getElementById('campingGearModal').classList.remove('show');
+  renderCampingGear();
+  showToast('装备清单已更新');
+});
+document.getElementById('campingGearModal') && document.getElementById('campingGearModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('campingGearModal')) {
+    document.getElementById('campingGearModal').classList.remove('show');
+  }
+});
 
 // 露营看板：只显示累计最多的文本（地点/交通/人员/类别），不标注类别
 function renderCampingBoard() {
@@ -2203,11 +2250,11 @@ function renderCampingHistory() {
   if (!el) return;
   const logs = campingLogs().slice().reverse(); // 最新在前
   if (!logs.length) {
-    el.innerHTML = '<div class="camping-history-empty">暂无露营历史</div>';
+    el.innerHTML = '<h4>历史记录</h4><div class="camping-history-empty">暂无露营历史</div>';
     return;
   }
   const rateEmoji = { '优秀': '⭐', '良好': '👍', '说得过去': '🙂', '扑街': '💩' };
-  el.innerHTML = logs.map(l => `
+  el.innerHTML = '<h4>历史记录</h4>' + logs.map(l => `
     <div class="camping-history-item glass">
       <div class="camping-history-head">
         <span class="camping-history-date">${escapeHtml(l.date)}</span>
@@ -2399,9 +2446,6 @@ document.querySelectorAll('.fab-menu-item').forEach(item => {
     else if (action === 'project') {
       // 打开新建项目弹窗
       openProjectModal();
-    } else if (action === 'sport') {
-      // 打开运动计划编辑
-      editPlan('sport');
     } else if (action === 'habit') {
       // 直接打开添加习惯弹层
       resetHabitAddModal();
@@ -2433,17 +2477,17 @@ function renderHealthDashboard() {
   el.innerHTML = `
     <div class="hd-row">
       <div class="hd-card">
-        <div class="hd-card-icon">🏃</div>
+        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="hd-card-val">${escapeHtml(sport.plan.period||'未设置')}</div>
         <div class="hd-card-label">运动计划</div>
       </div>
       <div class="hd-card accent">
-        <div class="hd-card-icon">⏱</div>
+        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="hd-card-val">${sportMin}</div>
         <div class="hd-card-label">本周运动（分钟）</div>
       </div>
       <div class="hd-card">
-        <div class="hd-card-icon">✅</div>
+        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.2 12.4 11 15.2l5-5.4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
         <div class="hd-card-val">${todayCount}/${habits.length}</div>
         <div class="hd-card-label">今日打卡</div>
       </div>

@@ -1,8 +1,8 @@
 /* ================= 全局变量 ================= */
 :root {
-  --bg-0: #050608;
+  --bg-0: #17181c;
   --bg-1: #0b0d12;
-  --glass-bg: rgba(20, 22, 30, 0.55);
+  --glass-bg: #1f2125;
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-hl: rgba(255, 255, 255, 0.04);
   --text-0: #f5f6f8;
@@ -38,7 +38,7 @@ body {
   position: relative;
   max-width: 480px;
   margin: 0 auto;
-  background: #000;
+  background: var(--bg-0);
   min-height: 100vh;
   padding-bottom: 90px;
   overflow-x: hidden;
@@ -284,7 +284,7 @@ body {
   content: "";
   position: absolute;
   inset: 5px;
-  background: var(--bg-1);
+  background: var(--bg-0);   /* 进度环内部背景：原 var(--bg-1)(近黑) 改用全局背景 #17181c */
   border-radius: 50%;
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
 }
@@ -829,17 +829,16 @@ body {
 /* ================= 底部 Tab ================= */
 .tab-bar {
   position: fixed;
-  bottom: 12px;
-  left: 12px;
-  right: 12px;
-  max-width: 456px;
-  margin: 0 auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
   padding: 10px 16px 14px;
-  border-radius: 22px;
+  border-radius: 0;
   z-index: 40;
+  background: var(--bg-0);   /* 颜色与 body 背景保持一致 */
 }
 .tab {
   background: transparent;
@@ -857,9 +856,11 @@ body {
 }
 .tab span { font-weight: 500; }
 .tab.active {
-  color: var(--accent);
-  background: rgba(61, 220, 151, 0.1);
+  color: var(--text-0);
+  background: transparent !important;
 }
+.tab.active svg { opacity: 1; }
+.tab.active span { font-weight: 700; }
 .tab.active.tab-add { background: transparent !important; }
 
 /* ================= 可折叠面板 ================= */
@@ -891,7 +892,7 @@ body {
   align-items: center;
   gap: 8px;
 }
-.collapse-icon { font-size: 16px; }
+.collapse-icon { font-size: 16px; display: flex; align-items: center; line-height: 0; color: var(--text-1); }
 .collapse-meta {
   display: flex;
   align-items: center;
@@ -1023,6 +1024,8 @@ body {
   max-height: 85vh;
   overflow-y: auto;
   animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  /* 弹层卡片底色统一为 #151D29（覆盖 .glass 的暗色半透明背景） */
+  background: #151D29;
 }
 @keyframes modalIn {
   from { transform: translateY(100%); }
@@ -1108,6 +1111,18 @@ body {
   gap: 10px;
 }
 .form-col { min-width: 0; }
+/* datetime-local 等时间输入框自带固有最小宽度，双列并排时容易溢出容器/超出屏幕。
+   这里让含时间输入框的那一列独占整行（纵向堆叠），从根上避免横向溢出；
+   普通下拉/文本列仍可并排。 */
+.form-col input[type="datetime-local"],
+.form-col input[type="time"] {
+  min-width: 0;
+  width: 100%;
+}
+.form-col:has(input[type="datetime-local"]),
+.form-col:has(input[type="time"]) {
+  grid-column: 1 / -1;
+}
 
 .modal-foot {
   display: flex;
@@ -1859,15 +1874,13 @@ body.theme-light .search-bar input {
 
 /* ================= 健康管理页 ================= */
 .health-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 4px 14px 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-.health-tabs::-webkit-scrollbar { display: none; }
 .health-tab {
-  padding: 7px 14px;
+  padding: 8px 6px;
   border-radius: 20px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -1879,6 +1892,9 @@ body.theme-light .search-bar input {
   font-family: inherit;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .health-tab.active {
   background: linear-gradient(135deg, rgba(61, 220, 151, 0.2), rgba(74, 214, 255, 0.1));
@@ -1890,21 +1906,30 @@ body.theme-light .search-bar input {
 .health-panel.active { display: block; animation: fadeIn 0.25s ease; }
 
 /* ========== 户外露营 ========== */
-/* 露营装备看板 */
+/* 露营装备看板（与运动计划看板一致：圆角/边距） */
 .camping-gear {
-  margin-bottom: 14px;
-  padding: 16px;
-  text-align: center;
+  margin-bottom: 10px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
 }
 .camping-gear-title { font-size: 14px; font-weight: 600; color: var(--text-0); margin-bottom: 12px; }
 .camping-gear-stats { display: flex; justify-content: center; gap: 28px; margin-bottom: 10px; }
 .camping-gear-stat { display: flex; flex-direction: column; align-items: center; }
 .camping-gear-stat .cg-num { font-size: 22px; font-weight: 700; color: var(--accent); }
 .camping-gear-stat .cg-label { font-size: 11px; color: var(--text-2); margin-top: 2px; }
-.camping-gear-icons { font-size: 22px; letter-spacing: 8px; opacity: 0.7; }
+.camping-gear-icons {
+  font-size: 13px;
+  color: var(--text-1);
+  letter-spacing: 0;
+  opacity: 0.9;
+  line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+}
 
-/* 露营看板 */
-.camping-board { margin-bottom: 14px; padding: 14px; }
+/* 露营看板（与运动时长看板一致：圆角/边距） */
+.camping-board { margin-bottom: 10px; padding: 14px; border-radius: var(--radius-sm); }
 .camping-board-title { font-size: 14px; font-weight: 600; color: var(--text-0); margin-bottom: 12px; text-align: center; }
 .camping-board-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .camping-board-cell {
@@ -1920,6 +1945,12 @@ body.theme-light .search-bar input {
 
 /* 历史记录 */
 .camping-history { display: flex; flex-direction: column; gap: 10px; }
+.camping-history h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 4px 0 0;
+}
 .camping-history-empty { text-align: center; color: var(--text-2); font-size: 12px; padding: 16px; }
 .camping-history-item { position: relative; padding: 14px; }
 .camping-history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -2112,7 +2143,25 @@ body.theme-light .search-bar input {
 /* ================= PC端新增面板（移动端隐藏） ================= */
 .ai-assistant { display: none; }
 .overview-bottom-row { display: flex; flex-direction: column; }
-.panel-head { display: none; }
+/* 健康看板与上方项目看板之间间距加大 */
+.overview-health-panel { margin-top: 22px; }
+/* 项目看板 / 健康看板 标题：移动端也显示 */
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+.panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-0);
+}
+.panel-meta {
+  font-size: 11px;
+  color: var(--text-2);
+}
 
 /* ================= 健康看板 ================= */
 .health-dashboard {
@@ -2133,7 +2182,8 @@ body.theme-light .search-bar input {
   text-align: center;
   min-width: 0;
 }
-.hd-card-icon { font-size: 22px; margin-bottom: 4px; }
+.hd-card-icon { font-size: 22px; margin-bottom: 4px; display: flex; justify-content: center; align-items: center; min-height: 24px; }
+.hd-card-icon svg { display: block; color: var(--text-1); }
 .hd-card-val {
   font-size: 18px;
   font-weight: 700;
@@ -2267,14 +2317,28 @@ body.theme-light .search-bar input {
 .habit-add-bar {
   padding: 0 14px 10px;
 }
+/* 早睡/早起 预设习惯区（位于添加习惯按钮上方） */
+.habit-preset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 0 10px;   /* 无左右内边距：总宽与「添加习惯」按钮保持一致 */
+}
+.habit-preset-label {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: 4px 0 2px;
+}
 .habit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 0 14px 20px;
+  padding: 0 0 20px;   /* 无左右内边距：总宽与「添加习惯」按钮保持一致 */
 }
 .habit-card {
-  background: rgba(60, 68, 84, 0.45);   /* 透明灰，比黑色更清晰 */
+  background: #1f2125;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
   padding: 14px;
@@ -2578,21 +2642,11 @@ body.theme-light .search-bar input {
     color: var(--text-1);
   }
   .tab.active {
-    background: rgba(61, 220, 151, 0.12);
-    color: var(--accent);
+    background: transparent !important;
+    color: var(--text-0);
   }
   .tab.active svg { opacity: 1; }
-  .tab.active::before {
-    content: "";
-    position: absolute;
-    left: -10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 18px;
-    border-radius: 0 3px 3px 0;
-    background: var(--accent);
-  }
+  .tab.active span { font-weight: 700; }
 
   /* PC端隐藏移动端中央加号（已移至侧边栏 Quick Create） */
   .tab-add { display: none !important; }
@@ -2940,13 +2994,13 @@ body.theme-light .search-bar input {
   /* ========== 健康页 ========== */
   .page-health .section-header h2 { font-size: 20px; }
   .health-tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: 10px;
-    justify-content: flex-start;
     margin-bottom: 20px;
   }
   .health-tab {
-    padding: 10px 24px;
+    padding: 10px 8px;
     font-size: 14px;
     border-radius: 10px;
   }

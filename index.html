@@ -185,7 +185,7 @@
         <!-- 项目卡片组 -->
         <div class="overview-projects-panel">
           <div class="panel-head">
-            <span class="panel-title">📋 项目看板</span>
+            <span class="panel-title">项目看板</span>
             <span class="panel-meta" id="overviewProjectCount">0 个项目</span>
           </div>
           <div class="projects-row" id="overviewProjects">
@@ -195,7 +195,7 @@
         <!-- 健康看板 -->
         <div class="overview-health-panel">
           <div class="panel-head">
-            <span class="panel-title">💚 健康看板</span>
+            <span class="panel-title">健康看板</span>
           </div>
           <div class="health-dashboard glass" id="healthDashboard">
             <!-- JS 渲染 -->
@@ -224,7 +224,7 @@
       <div class="collapsible-section">
         <button class="collapse-header" id="todayTasksHeader">
           <span class="collapse-title">
-            <span class="collapse-icon">📋</span>
+            <span class="collapse-icon"><svg viewBox="0 0 24 24" width="17" height="17"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span>
             今日待办
           </span>
           <span class="collapse-meta">
@@ -241,7 +241,7 @@
       <div class="collapsible-section">
         <button class="collapse-header" id="weekTasksHeader">
           <span class="collapse-title">
-            <span class="collapse-icon">📅</span>
+            <span class="collapse-icon"><svg viewBox="0 0 24 24" width="17" height="17"><rect x="3.5" y="5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span>
             本周任务
           </span>
           <span class="collapse-meta">
@@ -273,10 +273,10 @@
     <section class="page page-health" id="pageHealth">
       <!-- 子Tab -->
       <div class="health-tabs">
-        <button class="health-tab active" data-sub="sport">🏃 运动训练</button>
-        <button class="health-tab" data-sub="weight">⚖ 体重管理</button>
-        <button class="health-tab" data-sub="habit">✅ 习惯打卡</button>
-        <button class="health-tab" data-sub="camping">⛺ 户外露营</button>
+        <button class="health-tab active" data-sub="sport">运动训练</button>
+        <button class="health-tab" data-sub="weight">体重管理</button>
+        <button class="health-tab" data-sub="habit">习惯打卡</button>
+        <button class="health-tab" data-sub="camping">户外露营</button>
       </div>
 
       <!-- 运动训练 -->
@@ -301,9 +301,11 @@
 
       <!-- 习惯打卡 -->
       <div class="health-panel" id="panelHabit">
-        <div class="habit-add-bar">
-          <button class="btn btn-ghost btn-sm" id="habitAddBtn">+ 添加习惯</button>
-        </div>
+        <!-- 早睡/早起 预设习惯（在添加习惯按钮上方） -->
+        <div class="habit-preset" id="habitPreset"></div>
+        <!-- 添加习惯按钮（与记录运动一致的横向绿色模块） -->
+        <button class="btn btn-primary health-log-btn" id="habitAddBtn" style="margin-bottom:10px;">+ 添加习惯</button>
+        <!-- 其他新建习惯 -->
         <div class="habit-grid" id="habitGrid">
           <!-- JS 渲染双列习惯卡 -->
         </div>
@@ -479,10 +481,6 @@
       <button class="fab-menu-item" data-action="task">
         <span class="fab-menu-icon">📋</span>
         <span class="fab-menu-label">新建任务</span>
-      </button>
-      <button class="fab-menu-item" data-action="sport">
-        <span class="fab-menu-icon">🏃</span>
-        <span class="fab-menu-label">运动计划</span>
       </button>
       <button class="fab-menu-item" data-action="habit">
         <span class="fab-menu-icon">✅</span>
@@ -687,6 +685,25 @@
       <div class="modal-foot">
         <button class="btn btn-ghost" id="campingLogCancel">取消</button>
         <button class="btn btn-primary" id="campingLogSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 编辑露营装备弹层 -->
+  <div class="modal-mask" id="campingGearModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3 id="campingGearTitle">编辑露营装备</h3>
+        <button class="modal-close" id="campingGearClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">装备清单</label>
+        <textarea id="campingGearInput" rows="5" placeholder="如：帐篷 / 睡袋 / 防潮垫 / 头灯 / 烧烤架 ..."></textarea>
+        <p class="form-hint">换行可分行填写，保存后会显示在露营装备看板。</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="campingGearCancel">取消</button>
+        <button class="btn btn-primary" id="campingGearSave">保存</button>
       </div>
     </div>
   </div>
