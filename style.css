@@ -372,6 +372,13 @@ body {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+.chart-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
 .chart-legend {
   display: flex;
   gap: 14px;
@@ -480,6 +487,9 @@ body {
   padding: 10px 14px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .search-bar input {
   width: 100%;
@@ -488,8 +498,23 @@ body {
   outline: none;
   color: var(--text-0);
   font-size: 13px;
+  flex: 1;
+  min-width: 0;
 }
 .search-bar input::placeholder { color: var(--text-2); }
+.search-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.search-btn:hover { color: var(--accent); }
+.search-btn svg { display: block; }
 
 /* ================= 任务列表 ================= */
 .task-list { display: flex; flex-direction: column; gap: 8px; }
@@ -1083,15 +1108,15 @@ body {
 .modal select option { background: var(--bg-1); }
 .modal input[type="datetime-local"] { color-scheme: dark; }
 
-/* 健康记录输入框：加大，文字显示蓝色 */
+/* 健康记录输入框：放大、文字用主题色 */
 .health-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(74, 214, 255, 0.3);
+  border: 1px solid rgba(61, 220, 151, 0.3);
   border-radius: 12px;
-  padding: 13px 14px;
-  color: #4ad6ff;
-  font-size: 17px;
+  padding: 14px 15px;
+  color: var(--accent);          /* 输入文字为主题色 */
+  font-size: 18px;
   font-weight: 600;
   outline: none;
   font-family: inherit;
@@ -1099,11 +1124,16 @@ body {
   color-scheme: dark;
   -webkit-appearance: none;
 }
-.health-input::placeholder { color: rgba(74, 214, 255, 0.45); font-weight: 400; }
+.health-input::placeholder { color: rgba(61, 220, 151, 0.5); font-weight: 400; }
 .health-input:focus {
-  border-color: #4ad6ff;
-  background: rgba(74, 214, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(74, 214, 255, 0.15);
+  border-color: var(--accent);
+  background: rgba(61, 220, 151, 0.08);
+  box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.15);
+}
+.health-input::-webkit-outer-spin-button,
+.health-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 .form-row {
   display: grid;
@@ -1118,7 +1148,12 @@ body {
 .form-col input[type="time"] {
   min-width: 0;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
+/* 含日期/时间输入框的列独占整行，宽度与上下普通输入框一致，避免超出屏幕。
+   .datetime-col 类为显式声明（兼容旧浏览器）；:has() 作为兜底。 */
+.form-col.datetime-col,
 .form-col:has(input[type="datetime-local"]),
 .form-col:has(input[type="time"]) {
   grid-column: 1 / -1;
@@ -1128,7 +1163,25 @@ body {
   display: flex;
   gap: 10px;
   margin-top: 18px;
+  align-items: center;
 }
+/* 编辑项目弹窗底部的删除图标按钮 */
+.btn-del {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-del:hover { color: var(--danger); background: rgba(255, 90, 95, 0.12); border-color: var(--danger); }
+.btn-del svg { display: block; }
 .btn {
   flex: 1;
   padding: 12px;
@@ -1952,7 +2005,7 @@ body.theme-light .search-bar input {
   margin: 4px 0 0;
 }
 .camping-history-empty { text-align: center; color: var(--text-2); font-size: 12px; padding: 16px; }
-.camping-history-item { position: relative; padding: 14px; }
+.camping-history-item { position: relative; padding: 14px; border-radius: var(--radius-sm); }
 .camping-history-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .camping-history-date { font-size: 11px; color: var(--text-2); }
 .camping-history-rate { font-size: 15px; }
@@ -1965,7 +2018,7 @@ body.theme-light .search-bar input {
 .camping-chip.hide { display: none; }
 .camping-history-note { font-size: 11px; color: var(--text-2); margin-top: 4px; }
 .camping-history-del {
-  position: absolute; top: 10px; right: 10px;
+  position: absolute; top: auto; bottom: 10px; right: 10px;   /* 删除按钮置于右下角，避免与右上角评价重叠 */
   background: none; border: none; color: var(--text-2);
   font-size: 11px; cursor: pointer; padding: 2px;
 }
@@ -2165,10 +2218,18 @@ body.theme-light .search-bar input {
 
 /* ================= 健康看板 ================= */
 .health-dashboard {
-  border-radius: var(--radius);
-  padding: 14px;
+  /* 取消最外层整体底框：仅作为包裹容器，背景/边框交由内部三个 .hd-section 呈现 */
   margin-bottom: 10px;
 }
+/* 健康面板内部三个分区：指标 / 睡眠 / 趋势+按钮，各自独立面板 */
+.hd-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.hd-section:last-child { margin-bottom: 0; }
 .hd-row {
   display: flex;
   gap: 8px;
@@ -2947,8 +3008,6 @@ body.theme-light .search-bar input {
 
   /* ========== 健康看板（PC重排） ========== */
   .overview-health-panel .health-dashboard {
-    border-radius: var(--radius);
-    padding: 14px;
     flex: 1;
   }
   .health-dashboard .hd-row {

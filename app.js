@@ -511,6 +511,21 @@ document.getElementById('projectSave').addEventListener('click', () => {
   refreshTaskProjectOptions();
 });
 
+// 删除项目（编辑项目弹窗右下角垃圾桶）
+document.getElementById('projectDel')?.addEventListener('click', () => {
+  if (!editingProjectId) { showToast('仅编辑状态可删除项目'); return; }
+  const p = (state.projects || []).find(x => x.id === editingProjectId);
+  if (!p) return;
+  if (!confirm(`是否确认删除项目“${p.name}”？`)) return;   // 取消则返回编辑卡片
+  state.projects = (state.projects || []).filter(x => x.id !== editingProjectId);
+  saveState();
+  closeProjectModal();
+  renderProjects();
+  renderOverview();
+  refreshTaskProjectOptions();
+  showToast('项目已删除');
+});
+
 document.getElementById('modalSave').addEventListener('click', () => {
   const title = document.getElementById('taskTitle').value.trim();
   if (!title) { showToast('请输入任务标题'); return; }
@@ -546,16 +561,22 @@ document.getElementById('modalSave').addEventListener('click', () => {
 });
 
 // 搜索（任务列表 + 总览项目卡片按标签/名称/类型过滤）
-document.getElementById('searchInput')?.addEventListener('input', () => {
+// 总览搜索框：输入后点搜索图标或按回车确认，才执行搜索
+function doSearch() {
   renderTasks();
   renderOverview();
+}
+const siEl = document.getElementById('searchInput');
+const sbEl = document.getElementById('searchBtn');
+if (siEl) siEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doSearch();
 });
+if (sbEl) sbEl.addEventListener('click', doSearch);
 document.getElementById('globalSearchInput')?.addEventListener('input', (e) => {
   // PC 全局搜索同步到原搜索框并切换任务页
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.value = e.target.value;
-  renderTasks();
-  renderOverview();
+  doSearch();
 });
 
 // ---------- 日历 ----------
@@ -885,10 +906,10 @@ function renderOverview() {
     const elOverSub = document.getElementById('statOverdueSub');
     if (elOverSub) elOverSub.textContent = overdueTasks;
 
-    // 本月项目进度（= 所有项目的任务完成率）
-    const allProjTasks = tasks;
-    const allDoneTasks = tasks.filter(t => t.done);
-    const projPct = allProjTasks.length ? Math.round(allDoneTasks.length / allProjTasks.length * 100) : 0;
+    // 本月项目进度（项目维度：已完成项目数 / 总项目数）
+    const totalProj = projects.length;
+    const doneProj = projects.filter(p => p.status === 'done').length;
+    const projPct = totalProj ? Math.round(doneProj / totalProj * 100) : 0;
 
     const d = new Date();
     const year = d.getFullYear();
@@ -896,33 +917,41 @@ function renderOverview() {
     const today = d.getDate();
 
     const elLabel = document.getElementById('progressDateLabel');
-    if (elLabel) elLabel.textContent = `${year}年 ${month}月 · 本月项目进度`;
+    if (elLabel) elLabel.textContent = `${year}年 ${month}月 · 本月进度`;
     const elPct = document.getElementById('circlePct');
     if (elPct) elPct.textContent = projPct + '%';
     const elDays = document.getElementById('progressDays');
-    if (elDays) elDays.innerHTML = `已完成 <strong>${allDoneTasks.length}</strong>/${allProjTasks.length} 任务`;
+    if (elDays) elDays.innerHTML = `已完成 <strong>${doneProj}</strong>/${totalProj} 个项目`;
     const elCirc = document.getElementById('progressCircle');
     if (elCirc) elCirc.style.background =
       `conic-gradient(var(--accent) 0% ${projPct}%, rgba(255,255,255,0.08) ${projPct}% 100%)`;
 
-    // 年度柱状图：每月固定总高，蓝色=已完成，灰色=未完成，总高统一
+    // 年度柱状图：按项目创建月份(start)统计每月新增项目数
     const BAR_H = 70;          // 柱子总高度（px）固定
     const months = ['1','2','3','4','5','6','7','8','9','10','11','12'];
-    // 每月"已完成数"（0-10），未完成=10-已完成
-    const doneData = [4, 5, 4, 6, 6, 8, 5, 3, 4, 5, 8, 3];
+    // 解析 datetime 串 → {y,m}，取开始时间所在月份
+    const projMonth = p => {
+      const md = String(p.start || '').match(/^(\d{4})-(\d{2})-\d{2}/);
+      return md ? { y: +md[1], m: parseInt(md[2], 10) } : null;
+    };
+    const newPerMonth = new Array(12).fill(0);
+    projects.forEach(p => {
+      const s = projMonth(p);
+      if (s && s.y === year && s.m >= 1 && s.m <= 12) newPerMonth[s.m - 1]++;
+    });
+    const maxMonth = Math.max(1, ...newPerMonth);   // 避免除以0
     const chartBars = document.getElementById('chartBars');
     if (chartBars) {
       chartBars.innerHTML = months.map((m, i) => {
-        const done = Math.min(10, Math.max(0, doneData[i]));
-        const undone = 10 - done;  // 灰色部分
-        const doneH = Math.round(done / 10 * BAR_H);
-        const emptyH = Math.round(undone / 10 * BAR_H);
+        const n = newPerMonth[i];
+        const h = Math.round(n / maxMonth * BAR_H);
         return `
           <div class="chart-month">
             <div class="chart-bar-stack" style="height:${BAR_H}px">
-              <div class="chart-bar-fill" style="height:${doneH}px"></div>
+              <div class="chart-bar-fill" style="height:${h < 2 ? 2 : h}px"></div>
             </div>
             <span class="chart-month-label">${m}</span>
+            <span class="chart-badge">${n}</span>
           </div>`;
       }).join('');
     }
@@ -1176,6 +1205,9 @@ const SETTINGS_PREFS_KEY = 'workbench_settings_prefs_v1';
 function openSettings() {
   renderSettingsStats();
   loadSettingsPrefsToUI();
+  // 登录账号栏显示当前登录名
+  const lan = document.getElementById('loginAccountName');
+  if (lan) lan.textContent = currentUser || '—';
   settingsPage.classList.add('show');
 }
 document.getElementById('settingsBack').addEventListener('click', () => {
@@ -1225,8 +1257,8 @@ function renderSettingsStats() {
 
 // ========== 设置项偏好管理 ==========
 const DEFAULT_SETTINGS = {
-  autoSync: false,
-  syncFilePath: '',
+  syncFilePathMobile: '',
+  syncFilePathPc: '',
   workHourDecimals: '1',
   workHourUnit: 'h',
   theme: 'dark',
@@ -1243,10 +1275,10 @@ function loadSettingsPrefs() {
 function saveSettingsPrefs() {
   const sp = loadSettingsPrefs();
   // 收集UI值
-  const autoSync = document.getElementById('autoSync');
-  if (autoSync) sp.autoSync = autoSync.checked;
-  const syncFilePath = document.getElementById('syncFilePath');
-  if (syncFilePath) sp.syncFilePath = syncFilePath.value.trim();
+  const syncFilePathMobile = document.getElementById('syncFilePathMobile');
+  if (syncFilePathMobile) sp.syncFilePathMobile = syncFilePathMobile.value.trim();
+  const syncFilePathPc = document.getElementById('syncFilePathPc');
+  if (syncFilePathPc) sp.syncFilePathPc = syncFilePathPc.value.trim();
   const workHourDecimals = document.getElementById('workHourDecimals');
   if (workHourDecimals) sp.workHourDecimals = workHourDecimals.value;
   const workHourUnit = document.getElementById('workHourUnit');
@@ -1260,17 +1292,13 @@ function loadSettingsPrefsToUI() {
   const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
 
-  setCheck('autoSync', sp.autoSync);
-  setVal('syncFilePath', sp.syncFilePath || '');
+  setVal('syncFilePathMobile', sp.syncFilePathMobile || '');
+  setVal('syncFilePathPc', sp.syncFilePathPc || '');
   setVal('workHourDecimals', sp.workHourDecimals);
   setVal('workHourUnit', sp.workHourUnit);
   // 标签数量
   const tc = document.getElementById('tagCountHint');
   if (tc) tc.textContent = (sp.tags || []).length + ' 个标签';
-  // 字体大小
-  document.querySelectorAll('#fontSizeControl button').forEach(b => {
-    b.classList.toggle('active', b.dataset.size === sp.fontSize);
-  });
   // 主题和强调色
   applySettingsToUI(sp);
 }
@@ -1291,9 +1319,6 @@ function applySettingsToUI(sp) {
     '#A020F0': '#862617'           // 紫云 → 赭石
   };
   document.documentElement.style.setProperty('--accent-2', accent2Map[sp.accent] || '#4ad6ff');
-  // 字体大小
-  const sizeMap = { small: '12px', normal: '14px', large: '16px' };
-  document.documentElement.style.setProperty('--base-font-size', sizeMap[sp.fontSize] || '14px');
   // 同步UI
   document.querySelectorAll('#themeControl button').forEach(b => {
     b.classList.toggle('active', b.dataset.theme === sp.theme);
@@ -1318,17 +1343,9 @@ document.querySelectorAll('#accentPicker span').forEach(s => {
     applySettingsToUI(sp);
   });
 });
-// 字体大小控制
-document.querySelectorAll('#fontSizeControl button').forEach(b => {
-  b.addEventListener('click', () => {
-    const sp = loadSettingsPrefs(); sp.fontSize = b.dataset.size;
-    localStorage.setItem(SETTINGS_PREFS_KEY, JSON.stringify(sp));
-    applySettingsToUI(sp);
-  });
-});
 
-// 账号基础 → 打开头像编辑弹层
-document.getElementById('rowProfile')?.addEventListener('click', () => {
+// 编辑资料 → 打开头像/资料编辑弹层（登录账号行不再链接）
+document.getElementById('rowEditProfile')?.addEventListener('click', () => {
   settingsPage.classList.remove('show');
   setTimeout(() => {
     document.getElementById('avatarWrap').click();
@@ -1613,9 +1630,11 @@ function refreshAvatar() {
   document.getElementById('avatarCompany').textContent = p.company || '未设置公司';
   // 同步侧边栏
   syncSidebarProfile();
-  // 同时更新设置中心用户名
+  // 同时更新设置中心用户名 / 登录账号
   const su = document.getElementById('settingsUsername');
   if (su) su.textContent = currentUser;
+  const lan = document.getElementById('loginAccountName');
+  if (lan) lan.textContent = currentUser || '—';
 }
 
 // 点击头像打开编辑弹层
@@ -1741,11 +1760,12 @@ function renderHealthPlan() {
   const el = document.getElementById(healthSub + 'Plan');
 
   if (healthSub === 'sport') {
+    const dm = parseInt(plan.durationMin || 100, 10) || 100;
     el.innerHTML = `
       <h4>🏃 运动计划</h4>
       <div class="health-plan-row"><span>周期：</span>${escapeHtml(plan.period || '未设置')}</div>
-      <div class="health-plan-row"><span>时间：</span>${escapeHtml(plan.time || '未设置')}</div>
-      <div class="health-plan-row"><span>路线：</span>${escapeHtml(plan.route || '未设置')}</div>
+      <div class="health-plan-row"><span>运动计划时间：</span>${dm} 分钟</div>
+      <div class="health-plan-row"><span>运动地点：</span>${escapeHtml(plan.location || '未设置')}</div>
       <button class="health-plan-edit" onclick="editPlan('sport')">✎ 编辑计划</button>`;
   } else if (healthSub === 'weight') {
     el.innerHTML = `
@@ -1768,12 +1788,23 @@ function editPlan(type) {
   if (type === 'sport') {
     body.innerHTML = `
       <label class="form-label">重复周期</label>
-      <select id="hlPeriod"><option>每天</option><option>每周一三五</option><option>每周二四六</option><option>周末</option></select>
-      <label class="form-label">执行时段</label>
-      <input type="text" id="hlTime" value="${escapeHtml(plan.time||'18:00-19:00')}" placeholder="如 18:00-19:00">
-      <label class="form-label">运动路线</label>
-      <input type="text" id="hlRoute" value="${escapeHtml(plan.route||'')}" placeholder="如 小区跑道">`;
-    setTimeout(() => { document.getElementById('hlPeriod').value = plan.period || '每天'; }, 50);
+      <select id="hlPeriod"><option>每天</option><option>每周</option></select>
+      <label class="form-label">运动计划时间</label>
+      <select id="hlDurationPlan">
+        <option value="30">30 分钟</option>
+        <option value="60">60 分钟</option>
+        <option value="90">90 分钟</option>
+        <option value="120">2 小时</option>
+        <option value="480">8 小时</option>
+        <option value="600">10 小时</option>
+        <option value="720">12 小时</option>
+      </select>
+      <label class="form-label">运动地点</label>
+      <input type="text" id="hlLocation" value="${escapeHtml(plan.location || '')}" placeholder="如 小区跑道">`;
+    setTimeout(() => {
+      document.getElementById('hlPeriod').value = plan.period || '每天';
+      document.getElementById('hlDurationPlan').value = String(plan.durationMin || 60);
+    }, 50);
   } else if (type === 'weight') {
     body.innerHTML = `
       <label class="form-label">目标体重 (kg)</label>
@@ -1801,13 +1832,13 @@ function editPlan(type) {
     if (type === 'sport') {
       body.innerHTML = `
         <label class="form-label">运动时长（分钟）</label>
-        <input type="number" id="hlDuration" placeholder="如 30" min="1" max="300" value="30">
+        <input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30">
         <label class="form-label">备注（可选）</label>
-        <input type="text" id="hlNote" placeholder="如 慢跑">`;
+        <input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
     } else {
       body.innerHTML = `
         <label class="form-label">今日体重 (kg)</label>
-        <input type="number" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
+        <input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
     }
     document.getElementById('healthLogModal').classList.add('show');
   });
@@ -1831,8 +1862,8 @@ document.getElementById('healthLogSave').addEventListener('click', () => {
   if (healthEditingPlan) {
     if (healthSub === 'sport') {
       h.plan.period = document.getElementById('hlPeriod')?.value || '每天';
-      h.plan.time = document.getElementById('hlTime')?.value || '18:00-19:00';
-      h.plan.route = document.getElementById('hlRoute')?.value || '';
+      h.plan.durationMin = parseInt(document.getElementById('hlDurationPlan')?.value, 10) || 60;
+      h.plan.location = document.getElementById('hlLocation')?.value || '';
     } else if (healthSub === 'weight') {
       h.plan.target = document.getElementById('hlTarget')?.value || '65.0';
       h.plan.remindTime = document.getElementById('hlRemind')?.value || '08:00';
@@ -2473,12 +2504,17 @@ function renderHealthDashboard() {
   const today = todayStr();
   const todayLogs = state.health.habitLogs ? (state.health.habitLogs[today] || {}) : {};
   const todayCount = Object.keys(todayLogs).length;
+  // 当日运动打卡时间（分钟）
+  const todaySportMin = (sport.logs || []).filter(l => l.date === today).reduce((s, l) => s + (l.duration || 0), 0);
+  // 每日运动计划时间（分钟），默认 100
+  const planMin = parseInt(sport.plan.durationMin || 100, 10) || 100;
 
   el.innerHTML = `
+    <div class="hd-section hd-section-metrics">
     <div class="hd-row">
       <div class="hd-card">
         <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val">${escapeHtml(sport.plan.period||'未设置')}</div>
+        <div class="hd-card-val">${todaySportMin}/${planMin}</div>
         <div class="hd-card-label">运动计划</div>
       </div>
       <div class="hd-card accent">
@@ -2493,14 +2529,19 @@ function renderHealthDashboard() {
       </div>
     </div>
     <div class="hd-plan">
-      <strong>运动：</strong>${escapeHtml(sport.plan.period||'未设置')} ${escapeHtml(sport.plan.time||'')} · ${escapeHtml(sport.plan.route||'')}
+      <strong>运动：</strong>${escapeHtml(sport.plan.period||'未设置')} · ${planMin} 分钟 · ${escapeHtml(sport.plan.location||'未设置地点')}
     </div>
-    ${renderSleepChart()}
-    ${renderTrendChart()}
-    <div class="hd-quick-actions">
-      <button class="hd-quick-btn sport" onclick="quickHealthLog('sport')">🏃 运动</button>
-      <button class="hd-quick-btn weight" onclick="quickHealthLog('weight')">⚖ 体重</button>
-      <button class="hd-quick-btn sleep" onclick="quickHealthLog('habit')">✅ 打卡</button>
+    </div>
+    <div class="hd-section hd-section-sleep">
+      ${renderSleepChart()}
+    </div>
+    <div class="hd-section hd-section-trend">
+      ${renderTrendChart()}
+      <div class="hd-quick-actions">
+        <button class="hd-quick-btn sport" onclick="quickHealthLog('sport')">🏃 运动</button>
+        <button class="hd-quick-btn weight" onclick="quickHealthLog('weight')">⚖ 体重</button>
+        <button class="hd-quick-btn sleep" onclick="quickHealthLog('habit')">✅ 打卡</button>
+      </div>
     </div>
   `;
 
