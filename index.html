@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>个人工作台 - Personal Workbench</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 背景动效层 -->
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+
+  <!-- ========== 登录页 ========== -->
+  <div class="auth-page" id="authPage">
+    <div class="auth-card glass">
+      <div class="auth-logo">
+        <span class="brand-logo">W3</span>
+      </div>
+      <h1 class="auth-title">个人工作台</h1>
+      <p class="auth-subtitle">你的专属效率空间</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth="login">登录</button>
+        <button class="auth-tab" data-auth="register">注册</button>
+      </div>
+
+      <div class="auth-form">
+        <input type="text" id="authUsername" placeholder="用户名（3-20 位）" autocomplete="off">
+        <input type="password" id="authPassword" placeholder="密码（6 位以上）" autocomplete="off">
+        <button class="btn btn-primary auth-submit" id="authSubmit">登录</button>
+      </div>
+
+      <div class="auth-hint" id="authHint">
+        首次使用？点击上方"注册"创建账号
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== App 主体（登录后显示） ========== -->
+  <div id="appShell" style="display:none;">
+    <!-- 顶部操作栏 -->
+    <header class="top-bar">
+      <div class="top-left" id="topLeft">
+        <div class="avatar-wrapper" id="avatarWrap" title="点击修改头像和名称">
+          <div class="avatar" id="avatarImg"></div>
+          <div class="avatar-info">
+            <span class="avatar-name" id="avatarName">我的工作台</span>
+            <span class="avatar-company" id="avatarCompany">未设置公司</span>
+          </div>
+          <span class="avatar-edit-hint">✎</span>
+        </div>
+      </div>
+      <div class="top-center" id="topCenter">
+        <div class="page-title" id="pageTitle">项目总览</div>
+        <div class="page-subtitle">高效规划 · 智能协同 · 结果驱动</div>
+      </div>
+      <div class="top-right">
+        <div class="top-search" id="topSearch">
+          <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          <input type="text" placeholder="搜索任务、项目..." id="globalSearchInput">
+        </div>
+        <button class="icon-btn" id="historyBtn" title="统计">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 5V2L8 6l4 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z" fill="currentColor"/></svg>
+        </button>
+        <button class="icon-btn" id="settingsBtn" title="设置">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 4-2 .3a7.5 7.5 0 0 1-.6 1.5l1.3 1.6-2 2-1.6-1.3a7.5 7.5 0 0 1-1.5.6l-.3 2h-2.8l-.3-2a7.5 7.5 0 0 1-1.5-.6l-1.6 1.3-2-2 1.3-1.6a7.5 7.5 0 0 1-.6-1.5l-2-.3V8.7l2-.3a7.5 7.5 0 0 1 .6-1.5L8.1 5.3l2-2 1.6 1.3a7.5 7.5 0 0 1 1.5-.6l.3-2h2.8l.3 2a7.5 7.5 0 0 1 1.5.6l1.6-1.3 2 2-1.3 1.6a7.5 7.5 0 0 1 .6 1.5l2 .3V12Z" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 侧边栏/底部 Tab -->
+    <nav class="tab-bar glass" id="tabBar">
+      <button class="tab active" data-tab="overview">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 12 12 3l9 9M5 10v10h14V10" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>总览</span>
+      </button>
+      <button class="tab" data-tab="tasks">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 5h14v14H5zM8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        <span>任务</span>
+      </button>
+      <button class="tab tab-add" id="fabBtn" title="新增">
+        <span class="tab-add-bg">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </span>
+      </button>
+      <button class="tab" data-tab="projects">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 7h18v13H3zM8 7V4h8v3" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>项目</span>
+      </button>
+      <button class="tab" data-tab="health">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 21s-8-6-8-13A5 5 0 0 1 12 4a5 5 0 0 1 8 4c0 7-8 13-8 13Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+        <span>健康</span>
+      </button>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="app-main" id="appMain">
+
+    <!-- ========== 项目总览页 ========== -->
+    <section class="page page-overview active" id="pageOverview">
+      <!-- 搜索栏（PC端置顶） -->
+      <div class="search-bar">
+        <input type="text" placeholder="搜索任务、项目..." id="searchInput">
+      </div>
+
+      <!-- 统计卡片组 -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">项目总览</div>
+          <div class="stat-value" id="statTotalProj">0</div>
+          <div class="stat-meta">共 <span id="statTotalProjSub">0</span> 个项目</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">进行中</div>
+          <div class="stat-value" id="statActive">0</div>
+          <div class="stat-meta">较上月 <span class="up" id="statActiveTrend">—</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">已完成</div>
+          <div class="stat-value" id="statDone">0</div>
+          <div class="stat-meta">较上月 <span class="up" id="statDoneTrend">—</span></div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-label">逾期任务</div>
+          <div class="stat-value" id="statOverdue">0</div>
+          <div class="stat-meta">需关注 <span class="down" id="statOverdueSub">0</span> 项</div>
+        </div>
+      </div>
+
+      <!-- 进度飞轮 + 年度柱状图（左）+ 今日任务预览（右） -->
+      <div class="progress-section">
+        <div class="progress-label" id="progressDateLabel">本月进度</div>
+        <div class="progress-row">
+          <div class="progress-circle-wrap">
+            <div class="progress-circle" id="progressCircle">
+              <div class="circle-inner">
+                <div class="circle-pct" id="circlePct">0%</div>
+                <div class="circle-caption">本月进度</div>
+              </div>
+            </div>
+            <div class="progress-days" id="progressDays">—</div>
+          </div>
+          <div class="yearly-chart glass" id="yearlyChart">
+            <div class="chart-title">年度项目统计</div>
+            <div class="chart-bars" id="chartBars">
+              <!-- JS 渲染每月柱状图 -->
+            </div>
+            <div class="chart-legend">
+              <span><i style="background:var(--accent)"></i> 已完成</span>
+              <span><i style="background:rgba(255,255,255,0.1)"></i> 未完成</span>
+            </div>
+          </div>
+          <!-- PC端：AI 智能助手 -->
+          <div class="ai-assistant glass" id="aiAssistant">
+            <div class="ai-head">
+              <div class="ai-avatar">✨</div>
+              <div class="ai-title">AI 智能助手</div>
+            </div>
+            <div class="ai-body">
+              <div class="ai-section">
+                <div class="ai-section-title">🎯 今日焦点</div>
+                <div class="ai-focus-list" id="aiFocusList">
+                  <div class="empty-hint">暂无高优先级任务</div>
+                </div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-section-title">💡 智能建议</div>
+                <div class="ai-suggestion" id="aiSuggestion">正在分析你的工作数据...</div>
+              </div>
+              <div class="ai-section">
+                <div class="ai-section-title">📊 最新动态</div>
+                <div class="ai-news-list" id="aiNewsList">
+                  <div class="empty-hint">暂无动态</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 项目看板 + 健康看板（左右并排） -->
+      <div class="overview-bottom-row">
+        <!-- 项目卡片组 -->
+        <div class="overview-projects-panel">
+          <div class="panel-head">
+            <span class="panel-title">📋 项目看板</span>
+            <span class="panel-meta" id="overviewProjectCount">0 个项目</span>
+          </div>
+          <div class="projects-row" id="overviewProjects">
+            <!-- JS 渲染 -->
+          </div>
+        </div>
+        <!-- 健康看板 -->
+        <div class="overview-health-panel">
+          <div class="panel-head">
+            <span class="panel-title">💚 健康看板</span>
+          </div>
+          <div class="health-dashboard glass" id="healthDashboard">
+            <!-- JS 渲染 -->
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========== 任务管理页（日历 + 今日待办 + 本周任务） ========== -->
+    <section class="page page-tasks" id="pageTasks">
+      <!-- 日历区域 -->
+      <div class="calendar-wrap glass">
+        <div class="cal-header">
+          <button class="cal-nav" id="prevMonth">‹</button>
+          <div class="cal-title" id="calTitle">2025年5月</div>
+          <button class="cal-nav" id="nextMonth">›</button>
+        </div>
+        <div class="cal-weekdays">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <div class="cal-days" id="calDays"></div>
+      </div>
+
+      <!-- 今日待办（可折叠） -->
+      <div class="collapsible-section">
+        <button class="collapse-header" id="todayTasksHeader">
+          <span class="collapse-title">
+            <span class="collapse-icon">📋</span>
+            今日待办
+          </span>
+          <span class="collapse-meta">
+            <span class="badge" id="taskCount">0</span>
+            <span class="collapse-arrow" id="todayTasksArrow">▾</span>
+          </span>
+        </button>
+        <div class="collapse-body" id="todayTasksBody">
+          <div class="task-list" id="taskList"></div>
+        </div>
+      </div>
+
+      <!-- 本周任务（可折叠） -->
+      <div class="collapsible-section">
+        <button class="collapse-header" id="weekTasksHeader">
+          <span class="collapse-title">
+            <span class="collapse-icon">📅</span>
+            本周任务
+          </span>
+          <span class="collapse-meta">
+            <span class="badge" id="eventCount">0</span>
+            <span class="collapse-arrow" id="weekTasksArrow">▾</span>
+          </span>
+        </button>
+        <div class="collapse-body" id="weekTasksBody">
+          <div class="event-list" id="eventList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 项目管理页 ========== -->
+    <section class="page page-projects" id="pageProjects">
+      <div class="section-header">
+        <h2>我的项目</h2>
+        <span class="badge" id="projCount">0</span>
+      </div>
+      <div class="project-summary glass" id="projSummary">
+        <!-- 汇总由 JS 渲染 -->
+      </div>
+      <div class="project-full-list" id="projectFullList">
+        <!-- 项目卡片由 JS 渲染 -->
+      </div>
+    </section>
+
+    <!-- ========== 健康管理页 ========== -->
+    <section class="page page-health" id="pageHealth">
+      <!-- 子Tab -->
+      <div class="health-tabs">
+        <button class="health-tab active" data-sub="sport">🏃 运动训练</button>
+        <button class="health-tab" data-sub="weight">⚖ 体重管理</button>
+        <button class="health-tab" data-sub="habit">✅ 习惯打卡</button>
+        <button class="health-tab" data-sub="camping">⛺ 户外露营</button>
+      </div>
+
+      <!-- 运动训练 -->
+      <div class="health-panel active" id="panelSport">
+        <!-- 计划 -->
+        <div class="health-plan glass" id="sportPlan"></div>
+        <!-- 录入按钮 -->
+        <button class="btn btn-primary health-log-btn" id="sportLogBtn">✏ 记录运动</button>
+        <!-- 周图表 -->
+        <div class="health-chart glass" id="sportChart"></div>
+        <!-- 历史 -->
+        <div class="health-history" id="sportHistory"></div>
+      </div>
+
+      <!-- 体重管理 -->
+      <div class="health-panel" id="panelWeight">
+        <div class="health-plan glass" id="weightPlan"></div>
+        <button class="btn btn-primary health-log-btn" id="weightLogBtn">✏ 记录体重</button>
+        <div class="health-chart glass" id="weightChart"></div>
+        <div class="health-history" id="weightHistory"></div>
+      </div>
+
+      <!-- 习惯打卡 -->
+      <div class="health-panel" id="panelHabit">
+        <div class="habit-add-bar">
+          <button class="btn btn-ghost btn-sm" id="habitAddBtn">+ 添加习惯</button>
+        </div>
+        <div class="habit-grid" id="habitGrid">
+          <!-- JS 渲染双列习惯卡 -->
+        </div>
+      </div>
+
+      <!-- 户外露营 -->
+      <div class="health-panel" id="panelCamping">
+        <!-- 露营装备看板（最上面） -->
+        <div class="camping-gear glass" id="campingGear"></div>
+        <!-- 记录露营 -->
+        <button class="btn btn-primary health-log-btn" id="campingLogBtn">⛺ 记录露营</button>
+        <!-- 露营看板 -->
+        <div class="camping-board glass" id="campingBoard"></div>
+        <!-- 历史记录 -->
+        <div class="camping-history" id="campingHistory"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== 设置中心页（覆盖式） ========== -->
+  <section class="settings-page" id="settingsPage">
+    <header class="settings-header glass">
+      <button class="icon-btn" id="settingsBack">‹</button>
+      <h2>设置中心</h2>
+      <span style="width:36px;"></span>
+    </header>
+
+    <div class="settings-body">
+
+      <!-- 一、账号与同步 -->
+      <div class="settings-group">
+        <div class="group-title">一、账号与同步</div>
+        <div class="settings-card glass">
+          <div class="settings-row clickable" id="rowProfile">
+            <span>账号基础</span>
+            <span class="settings-row-hint">头像 · 昵称 · 工作室名称</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row clickable" id="rowChangePwd">
+            <span>修改登录密码</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row clickable" id="rowLogout">
+            <span class="danger-text">退出登录</span>
+            <span class="arrow">›</span>
+          </div>
+        </div>
+
+        <div class="settings-card glass" style="margin-top:10px;">
+          <div class="settings-row">
+            <span>自动同步</span>
+            <label class="toggle" id="toggleAutoSync">
+              <input type="checkbox" id="autoSync" onchange="saveSettingsPrefs()">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <span>同步文件位置</span>
+            <input type="text" class="form-input-sm" id="syncFilePath" placeholder="例如：/Documents/Workbench/" style="width:140px;" onchange="saveSettingsPrefs()">
+          </div>
+          <div class="settings-row clickable" id="rowManualSync">
+            <span>手动一键同步</span>
+            <span class="settings-row-hint">点击立即同步</span>
+            <span class="arrow">›</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 二、任务 & 项目通用配置 -->
+      <div class="settings-group">
+        <div class="group-title">二、任务 & 项目通用配置</div>
+        <div class="settings-card glass">
+          <div class="settings-row clickable" id="rowTagManage">
+            <span>自定义标签管理</span>
+            <span class="settings-row-hint" id="tagCountHint">0 个标签</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row">
+            <span>工时小数点保留</span>
+            <select class="form-select-sm" id="workHourDecimals" onchange="saveSettingsPrefs()">
+              <option value="0">整数</option>
+              <option value="1" selected>1 位小数</option>
+              <option value="2">2 位小数</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <span>工时单位</span>
+            <select class="form-select-sm" id="workHourUnit" onchange="saveSettingsPrefs()">
+              <option value="h" selected>小时（h）</option>
+              <option value="d">天（d）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三、文件与导出设置 -->
+      <div class="settings-group">
+        <div class="group-title">三、文件与导出设置</div>
+        <div class="settings-card glass">
+          <div class="settings-row clickable" id="rowCloudUsage">
+            <span>查看本地数据大小</span>
+            <span class="settings-row-hint" id="cloudUsageHint">查看占用量</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row clickable" id="rowBatchDelete">
+            <span>批量删除数据</span>
+            <span class="settings-row-hint">清理无用记录</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row clickable" id="rowExportAll">
+            <span>全部数据本地备份导出</span>
+            <span class="arrow">›</span>
+          </div>
+          <div class="settings-row clickable" id="rowImportAll">
+            <span>全部数据文件导入</span>
+            <span class="settings-row-hint">从备份文件恢复</span>
+            <span class="arrow">›</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 四、视图与外观 -->
+      <div class="settings-group">
+        <div class="group-title">四、视图与外观</div>
+        <div class="settings-card glass">
+          <div class="settings-row">
+            <span>主题模式</span>
+            <div class="seg-control" id="themeControl">
+              <button data-theme="dark" class="active">深色</button>
+              <button data-theme="light">浅色</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span>强调色</span>
+            <div class="color-picker" id="accentPicker">
+              <span data-accent="#3ddc97" class="active" style="background:#3ddc97"></span>
+              <span data-accent="#ED5126" style="background:#ED5126"></span>
+              <span data-accent="#862617" style="background:#862617"></span>
+              <span data-accent="#F97D1C" style="background:#F97D1C"></span>
+              <span data-accent="#FEBA07" style="background:#FEBA07"></span>
+              <span data-accent="#BACF65" style="background:#BACF65"></span>
+              <span data-accent="#20A162" style="background:#20A162"></span>
+              <span data-accent="#22A2C3" style="background:#22A2C3"></span>
+              <span data-accent="#2983BB" style="background:#2983BB"></span>
+              <span data-accent="#A020F0" style="background:#A020F0"></span>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span>界面字体大小</span>
+            <div class="seg-control" id="fontSizeControl">
+              <button data-size="small">小</button>
+              <button data-size="normal" class="active">标准</button>
+              <button data-size="large">大</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        个人工作台 v1.1 · 本地存储版<br>
+        数据保存在当前浏览器中
+      </div>
+    </div>
+  </section>
+
+  <!-- 左下角浮动操作按钮 + 弹出菜单 -->
+  <div class="fab-area" id="fabArea">
+    <div class="fab-menu" id="fabMenu">
+      <button class="fab-menu-item" data-action="project">
+        <span class="fab-menu-icon">📁</span>
+        <span class="fab-menu-label">新建项目</span>
+      </button>
+      <button class="fab-menu-item" data-action="task">
+        <span class="fab-menu-icon">📋</span>
+        <span class="fab-menu-label">新建任务</span>
+      </button>
+      <button class="fab-menu-item" data-action="sport">
+        <span class="fab-menu-icon">🏃</span>
+        <span class="fab-menu-label">运动计划</span>
+      </button>
+      <button class="fab-menu-item" data-action="habit">
+        <span class="fab-menu-icon">✅</span>
+        <span class="fab-menu-label">添加习惯</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 修改密码弹层 -->
+  <div class="modal-mask" id="pwdModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3>修改密码</h3>
+        <button class="modal-close" id="pwdClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">原密码</label>
+        <input type="password" id="oldPwd" placeholder="输入原密码">
+        <label class="form-label">新密码</label>
+        <input type="password" id="newPwd" placeholder="6 位以上">
+        <label class="form-label">确认新密码</label>
+        <input type="password" id="newPwd2" placeholder="再次输入">
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="pwdCancel">取消</button>
+        <button class="btn btn-primary" id="pwdSave">确认修改</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 头像/公司编辑弹层 -->
+  <div class="modal-mask" id="profileModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3>编辑资料</h3>
+        <button class="modal-close" id="profileClose">×</button>
+      </div>
+      <div class="modal-body profile-body">
+        <div class="profile-avatar-section">
+          <div class="profile-avatar-preview" id="profileAvatarPreview"></div>
+          <div class="profile-avatar-actions">
+            <button class="btn btn-ghost btn-sm" id="pickEmoji">选表情</button>
+            <button class="btn btn-ghost btn-sm" id="pickColor">换颜色</button>
+            <button class="btn btn-ghost btn-sm" id="pickImage">📷 上传图片</button>
+          </div>
+          <input type="file" id="avatarImageFile" accept="image/*" style="display:none;">
+          <div class="emoji-picker" id="emojiPicker" style="display:none;">
+            <span>😀</span><span>😎</span><span>🤩</span><span>🚀</span><span>💼</span>
+            <span>💡</span><span>🔥</span><span>⭐</span><span>🎯</span><span>🏆</span>
+            <span>💪</span><span>🧠</span><span>📊</span><span>📋</span><span>✅</span>
+            <span>⚡</span><span>🎨</span><span>🔧</span><span>📱</span><span>💻</span>
+          </div>
+          <div class="color-picker-grid" id="colorPickerGrid" style="display:none;">
+            <span style="background:#3ddc97"></span>
+            <span style="background:#4ad6ff"></span>
+            <span style="background:#a78bfa"></span>
+            <span style="background:#f0abfc"></span>
+            <span style="background:#ffb84a"></span>
+            <span style="background:#ff5a5f"></span>
+            <span style="background:#6366f1"></span>
+            <span style="background:#14b8a6"></span>
+            <span style="background:#f97316"></span>
+            <span style="background:#8b5cf6"></span>
+            <span style="background:#ec4899"></span>
+            <span style="background:#06b6d4"></span>
+          </div>
+        </div>
+        <label class="form-label">昵称</label>
+        <input type="text" id="profileName" placeholder="输入你的昵称" maxlength="12">
+        <label class="form-label">公司</label>
+        <input type="text" id="profileCompany" placeholder="输入公司/团队名称" maxlength="20">
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="profileCancel">取消</button>
+        <button class="btn btn-primary" id="profileSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 导入文件 -->
+  <input type="file" id="importFile" accept="application/json" style="display:none;">
+  </div><!-- /appShell -->
+
+  <!-- 健康数据录入弹层 -->
+  <div class="modal-mask" id="healthLogModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3 id="healthLogTitle">记录数据</h3>
+        <button class="modal-close" id="healthLogClose">×</button>
+      </div>
+      <div class="modal-body" id="healthLogBody">
+        <!-- JS 动态渲染 -->
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="healthLogCancel">取消</button>
+        <button class="btn btn-primary" id="healthLogSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加习惯弹层 -->
+  <div class="modal-mask" id="habitAddModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3 id="habitModalTitle">添加习惯</h3>
+        <button class="modal-close" id="habitAddClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">习惯类型</label>
+        <select id="habitType" class="form-select">
+          <option value="simple">📌 简单打卡（点一次即完成）</option>
+          <option value="reading">📖 读书打卡（记录时长）</option>
+          <option value="sleep">🌙 早睡打卡（自动记录入睡时间）</option>
+          <option value="wake">☀️ 早起打卡（自动记录起床时间）</option>
+          <option value="water">💧 喝水打卡（每次 300ml，每日目标 8 杯）</option>
+        </select>
+
+        <div class="habit-type-fields" id="habitFieldsSimple" style="display:block;">
+          <label class="form-label">习惯名称</label>
+          <input type="text" id="habitName" placeholder="如：冥想、写日记..." maxlength="10">
+          <label class="form-label">图标</label>
+          <div class="habit-icon-pick" id="habitIconPick">
+            <span>📖</span><span>💧</span><span>🏃</span><span>🧘</span><span>🎵</span>
+            <span>📝</span><span>🍎</span><span>💊</span><span>🚶</span><span>☀️</span>
+            <span>🌙</span><span>📱</span><span>🎬</span><span>📚</span><span>✍️</span>
+            <span>🧹</span><span>🐱</span><span>🌱</span><span>💪</span><span>🎯</span>
+          </div>
+          <label class="form-label">每日目标</label>
+          <input type="text" id="habitGoal" placeholder="如：1次 / 30分钟" maxlength="15">
+        </div>
+
+        <div class="habit-type-fields" id="habitFieldsReading" style="display:none;">
+          <label class="form-label">每日阅读目标（分钟）</label>
+          <input type="number" id="readingDuration" placeholder="如：30" value="30" min="5" max="300">
+        </div>
+
+        <div class="habit-type-fields" id="habitFieldsSleep" style="display:none;">
+          <label class="form-label">目标入睡时间</label>
+          <input type="time" id="sleepTargetTime" value="23:00">
+          <p class="form-hint">打卡时自动记录当前时间为入睡时间</p>
+        </div>
+
+        <div class="habit-type-fields" id="habitFieldsWake" style="display:none;">
+          <label class="form-label">目标起床时间</label>
+          <input type="time" id="wakeTargetTime" value="07:00">
+          <p class="form-hint">打卡时自动记录当前时间为起床时间</p>
+        </div>
+
+        <div class="habit-type-fields" id="habitFieldsWater" style="display:none;">
+          <label class="form-label">每日目标杯数</label>
+          <input type="number" id="waterCups" value="8" min="1" max="20">
+          <p class="form-hint">每点一次打卡 = 300ml，目标 8 杯/天</p>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="habitAddCancel">取消</button>
+        <button class="btn btn-primary" id="habitAddSave">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 记录露营弹层 -->
+  <div class="modal-mask" id="campingLogModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3>⛺ 记录露营</h3>
+        <button class="modal-close" id="campingLogClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">露营地点</label>
+        <input type="text" id="campLoc" placeholder="例如：莫干山营地" maxlength="30">
+        <label class="form-label">交通方式</label>
+        <select id="campTransport" class="form-select">
+          <option value="骑行">骑行</option>
+          <option value="电动车">电动车</option>
+          <option value="汽车">汽车</option>
+          <option value="公共">公共</option>
+        </select>
+        <label class="form-label">露营人员</label>
+        <select id="campPeople" class="form-select">
+          <option value="家人">家人</option>
+          <option value="朋友">朋友</option>
+          <option value="随缘">随缘</option>
+        </select>
+        <label class="form-label">露营评级</label>
+        <select id="campRating" class="form-select">
+          <option value="优秀">优秀</option>
+          <option value="良好">良好</option>
+          <option value="说得过去">说得过去</option>
+          <option value="扑街">扑街</option>
+        </select>
+        <label class="form-label">露营类别</label>
+        <select id="campCategory" class="form-select">
+          <option value="获能">获能</option>
+          <option value="散心">散心</option>
+          <option value="锻炼">锻炼</option>
+          <option value="野炊">野炊</option>
+        </select>
+        <label class="form-label">备注（可选）</label>
+        <input type="text" id="campNote" placeholder="补充说明..." maxlength="60">
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="campingLogCancel">取消</button>
+        <button class="btn btn-primary" id="campingLogSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增/编辑任务弹层 -->
+  <div class="modal-mask" id="taskModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3 id="modalTitle">新建任务</h3>
+        <button class="modal-close" id="modalClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">任务标题</label>
+        <input type="text" id="taskTitle" placeholder="例如：完成产品需求文档">
+
+        <label class="form-label">所属项目</label>
+        <select id="taskProject">
+          <!-- 由 JS 动态填充项目列表 -->
+        </select>
+
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">优先级</label>
+            <select id="taskPriority">
+              <option value="low">低</option>
+              <option value="mid" selected>中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+          <div class="form-col">
+            <label class="form-label">执行时间</label>
+            <input type="datetime-local" id="taskTime" value="">
+          </div>
+        </div>
+
+        <label class="form-label">备注（可选）</label>
+        <textarea id="taskNote" rows="2" placeholder="补充说明..."></textarea>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="modalCancel">取消</button>
+        <button class="btn btn-primary" id="modalSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新增/编辑项目弹层 -->
+  <div class="modal-mask" id="projectModal">
+    <div class="modal glass">
+      <div class="modal-head">
+        <h3 id="projectModalTitle">新建项目</h3>
+        <button class="modal-close" id="projectClose">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label">项目名称</label>
+        <input type="text" id="projName" placeholder="例如：小程序改版">
+        <label class="form-label">项目类型</label>
+        <select id="projType">
+          <option value="旧改建筑">旧改建筑</option>
+          <option value="旧改场地">旧改场地</option>
+          <option value="室内空间改造">室内空间改造</option>
+          <option value="别墅方案设计">别墅方案设计</option>
+          <option value="室内全案设计">室内全案设计</option>
+          <option value="展厅方案设计">展厅方案设计</option>
+        </select>
+        <div class="form-row">
+          <div class="form-col">
+            <label class="form-label">起始时间</label>
+            <input type="datetime-local" id="projStart">
+          </div>
+          <div class="form-col">
+            <label class="form-label">预计完成时间</label>
+            <input type="datetime-local" id="projDue">
+          </div>
+        </div>
+        <label class="form-label">项目地址</label>
+        <input type="text" id="projAddress" placeholder="例如：https://xxx.com 或物理位置">
+        <label class="form-label">项目标签</label>
+        <div class="project-tag-select" id="projTagSelect"></div>
+        <label class="form-label">项目备注</label>
+        <textarea id="projNote" rows="3" placeholder="补充说明项目背景、目标等..."></textarea>
+        <label class="form-label">项目状态</label>
+        <select id="projStatus">
+          <option value="active">进行中</option>
+          <option value="paused">已暂停</option>
+          <option value="done">已完成</option>
+        </select>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="projectCancel">取消</button>
+        <button class="btn btn-primary" id="projectSave">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
