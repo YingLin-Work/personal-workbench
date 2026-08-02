@@ -20,10 +20,10 @@ function defaultUserData() {
       { id: 4, title: 'Loft 隔层方案对比', project: 'Loft 空间改造', priority: 'low', date: today, time: '18:00', note: '', done: true }
     ],
     projects: [
-      { id: 'p1', name: '老洋房室内改造', type: '旧改建筑', status: 'active', desc: '梳理老洋房勘察反馈，确定改造范围', address: '上海市徐汇区', start: t1, due: t2, members: ['我'] },
-      { id: 'p2', name: '精品艺术展厅设计', type: '展厅方案设计', status: 'active', desc: '完成展厅平面与展示动线方案', address: '上海市黄浦区', start: t1, due: t2, members: ['我'] },
-      { id: 'p3', name: '法式别墅全案', type: '别墅方案设计', status: 'active', desc: '优化别墅整体硬装与软装方案', address: '', start: t2, due: '', members: ['我'] },
-      { id: 'p4', name: 'Loft 空间改造', type: '室内空间改造', status: 'paused', desc: '与业主对齐隔层方案与预算', address: '', start: t2, due: '', members: ['我'] }
+      { id: 'p1', name: '老洋房室内改造', code: 'YX-JG-2026-001', type: '旧改建筑', status: 'active', desc: '梳理老洋房勘察反馈，确定改造范围', address: '上海市徐汇区', start: t1, due: t2, members: ['我'] },
+      { id: 'p2', name: '精品艺术展厅设计', code: 'YX-ZT-2026-002', type: '展厅方案设计', status: 'active', desc: '完成展厅平面与展示动线方案', address: '上海市黄浦区', start: t1, due: t2, members: ['我'] },
+      { id: 'p3', name: '法式别墅全案', code: 'YX-BS-2026-003', type: '别墅方案设计', status: 'active', desc: '优化别墅整体硬装与软装方案', address: '', start: t2, due: '', members: ['我'] },
+      { id: 'p4', name: 'Loft 空间改造', code: 'YX-KJ-2026-004', type: '室内空间改造', status: 'paused', desc: '与业主对齐隔层方案与预算', address: '', start: t2, due: '', members: ['我'] }
     ],
     events: {
       [todayKey()]: [
@@ -420,6 +420,7 @@ function openProjectModal(id) {
     const p = (state.projects || []).find(x => x.id === id);
     if (!p) return;
     document.getElementById('projName').value = p.name || '';
+    document.getElementById('projCode').value = p.code || '';
     document.getElementById('projType').value = p.type || '旧改建筑';
     document.getElementById('projStart').value = p.start || '';
     document.getElementById('projDue').value = p.due || '';
@@ -429,6 +430,7 @@ function openProjectModal(id) {
     renderProjTagSelect(p.tags || []);
   } else {
     document.getElementById('projName').value = '';
+    document.getElementById('projCode').value = '';
     document.getElementById('projType').value = '旧改建筑';
     document.getElementById('projStart').value = '';
     document.getElementById('projDue').value = '';
@@ -487,6 +489,7 @@ document.getElementById('projectSave').addEventListener('click', () => {
   if (!name) { showToast('请输入项目名称'); return; }
   const data = {
     name,
+    code: document.getElementById('projCode').value.trim(),
     type: document.getElementById('projType').value,
     start: document.getElementById('projStart').value,
     due: document.getElementById('projDue').value,
@@ -993,7 +996,7 @@ function renderOverview() {
                 <span class="project-tag">${escapeHtml(p.name)}</span>
                 <span class="project-id">${pDone}/${pTotal}</span>
               </div>
-              <div class="project-title">${escapeHtml(p.name)}</div>
+              <div class="project-code">编号：${escapeHtml(p.code || '—')}</div>
               <div class="project-meta">${p.status === 'active' ? '进行中' : p.status === 'paused' ? '已暂停' : '已完成'} · ${fmtProjectWindow(p)}</div>
               ${tagChips ? `<div class="proj-card-tags">${tagChips}</div>` : ''}
             </div>`;
@@ -2594,7 +2597,7 @@ function renderHealthDashboard() {
     const DEF_BED = { h: 23, m: 0 };
     const DEF_WAKE = { h: 6, m: 30 };
 
-    let html = '<div class="hd-sleep-title">💤 最近14天睡眠记录</div>';
+    let html = '<div class="hd-sleep-title">14天睡眠记录</div>';
     html += '<div class="sleep-chart-wrap">';
     // 左侧时间刻度：12:00 / 0:00 / 20:00（纵向对应柱子的顶 / 虚线 / 底）
     html += '<div class="sleep-axis">'
@@ -2677,7 +2680,7 @@ function renderHealthDashboard() {
     const hasSport = sportData.some(v => v > 0);
     const hasWeight = weightData.some(v => v !== null);
     if (!hasSport && !hasWeight) {
-      return '<div class="hd-trend-chart"><div class="hd-trend-title">📈 14天健康趋势</div><div class="hd-trend-empty">暂无运动和体重数据</div></div>';
+      return '<div class="hd-trend-title">14天健康趋势</div><div class="hd-trend-chart"><div class="hd-trend-empty">暂无运动和体重数据</div></div>';
     }
 
     const W = 320, H = 130, pad = { t: 10, r: 10, b: 20, l: 28 };
@@ -2756,8 +2759,8 @@ function renderHealthDashboard() {
     ).join('');
 
     return `
+      <div class="hd-trend-title">14天健康趋势</div>
       <div class="hd-trend-chart">
-        <div class="hd-trend-title">📈 14天健康趋势</div>
         <div class="hd-trend-legend">
           <span><i style="background:var(--accent)"></i>运动（分钟）</span>
           <span><i style="background:var(--accent-2)"></i>体重（kg）</span>

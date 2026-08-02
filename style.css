@@ -452,6 +452,12 @@ body {
   font-weight: 600;
   margin-bottom: 4px;
 }
+.project-code {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
 .project-meta {
   font-size: 11px;
   color: var(--text-2);
@@ -947,7 +953,7 @@ body {
 
 /* 健康趋势折线图 */
 .hd-trend-chart {
-  margin-top: 16px;
+  margin-top: 6px;
   padding: 14px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -955,11 +961,13 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
+/* 健康趋势标题：位于折线图卡片上方，居中 */
 .hd-trend-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-0);
-  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  margin: 0 auto 8px;
 }
 .hd-trend-legend {
   display: flex;
@@ -2314,9 +2322,9 @@ body.theme-light .search-bar input {
 
 /* ================= 睡眠柱状图 ================= */
 .hd-sleep-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
   text-align: center;
   margin: 4px 0 16px;
 }
