@@ -796,25 +796,26 @@ body {
 .fab-menu-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 14px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  color: var(--text-1);
-  font-size: 13px;
-  font-weight: 500;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.10);            /* 提亮背景框 */
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--accent);                              /* 文字用主题色 */
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   transition: all 0.15s;
   font-family: inherit;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
-.fab-menu-item:hover { background: rgba(255,255,255,0.06); }
+.fab-menu-item:hover { background: rgba(255,255,255,0.16); }
 .fab-menu-item:active { transform: scale(0.96); }
-.fab-menu-icon { font-size: 16px; }
-.fab-menu-label { font-size: 13px; }
+.fab-menu-icon { font-size: 21px; color: var(--accent); display: flex; align-items: center; }
+.fab-menu-label { font-size: 15px; font-weight: 600; }
 
 /* 中央加号按钮（位于 tab-bar 内） */
 .tab-add {
@@ -1141,6 +1142,14 @@ body {
   gap: 10px;
 }
 .form-col { min-width: 0; }
+/* 健康记录里的 date/time 输入框：满宽且不超出屏幕 */
+.health-input[type="time"],
+.health-input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 /* datetime-local 等时间输入框自带固有最小宽度，双列并排时容易溢出容器/超出屏幕。
    这里让含时间输入框的那一列独占整行（纵向堆叠），从根上避免横向溢出；
    普通下拉/文本列仍可并排。 */
@@ -1992,7 +2001,8 @@ body.theme-light .search-bar input {
   padding: 12px;
   text-align: center;
 }
-.camping-board-cell .cbc-label { font-size: 18px; margin-bottom: 6px; }
+.camping-board-cell .cbc-label { font-size: 18px; margin-bottom: 6px; display: flex; justify-content: center; align-items: center; height: 18px; color: var(--text-1); }
+.camping-board-cell .cbc-label svg { display: block; }
 .camping-board-cell .cbc-val { font-size: 13px; font-weight: 600; color: var(--text-0); word-break: break-all; }
 .camping-board-empty { text-align: center; color: var(--text-2); font-size: 12px; padding: 16px; }
 
@@ -2079,7 +2089,12 @@ body.theme-light .search-bar input {
 .health-log-btn {
   width: 100%;
   margin-bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
+.health-log-btn svg { display: block; flex-shrink: 0; }
 
 /* 周图表 */
 .health-chart {
@@ -2292,6 +2307,7 @@ body.theme-light .search-bar input {
 }
 .hd-quick-btn:hover { background: rgba(255,255,255,0.06); }
 .hd-quick-btn:active { transform: scale(0.97); }
+.hd-quick-btn svg { display: block; flex-shrink: 0; }
 .hd-quick-btn.sport { border-color: rgba(61, 220, 151, 0.4); color: var(--accent); }
 .hd-quick-btn.weight { border-color: rgba(74, 214, 255, 0.4); color: var(--accent-2); }
 .hd-quick-btn.sleep { border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }

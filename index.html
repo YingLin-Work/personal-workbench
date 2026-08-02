@@ -285,7 +285,7 @@
         <!-- 计划 -->
         <div class="health-plan glass" id="sportPlan"></div>
         <!-- 录入按钮 -->
-        <button class="btn btn-primary health-log-btn" id="sportLogBtn">✏ 记录运动</button>
+        <button class="btn btn-primary health-log-btn" id="sportLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg> 记录运动</button>
         <!-- 周图表 -->
         <div class="health-chart glass" id="sportChart"></div>
         <!-- 历史 -->
@@ -295,7 +295,7 @@
       <!-- 体重管理 -->
       <div class="health-panel" id="panelWeight">
         <div class="health-plan glass" id="weightPlan"></div>
-        <button class="btn btn-primary health-log-btn" id="weightLogBtn">✏ 记录体重</button>
+        <button class="btn btn-primary health-log-btn" id="weightLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg> 记录体重</button>
         <div class="health-chart glass" id="weightChart"></div>
         <div class="health-history" id="weightHistory"></div>
       </div>
@@ -317,7 +317,7 @@
         <!-- 露营装备看板（最上面） -->
         <div class="camping-gear glass" id="campingGear"></div>
         <!-- 记录露营 -->
-        <button class="btn btn-primary health-log-btn" id="campingLogBtn">⛺ 记录露营</button>
+        <button class="btn btn-primary health-log-btn" id="campingLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 4 3 19h18L12 4Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><path d="M12 4l2.5 15M12 4 9.5 19M5 14h14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 记录露营</button>
         <!-- 露营看板 -->
         <div class="camping-board glass" id="campingBoard"></div>
         <!-- 历史记录 -->
@@ -344,32 +344,12 @@
             <span>登录账号</span>
             <span class="settings-row-hint" id="loginAccountName">—</span>
           </div>
-          <div class="settings-row clickable" id="rowEditProfile">
-            <span>编辑资料</span>
-            <span class="arrow">›</span>
-          </div>
           <div class="settings-row clickable" id="rowChangePwd">
             <span>修改登录密码</span>
             <span class="arrow">›</span>
           </div>
           <div class="settings-row clickable" id="rowLogout">
             <span class="danger-text">退出登录</span>
-            <span class="arrow">›</span>
-          </div>
-        </div>
-
-        <div class="settings-card glass" style="margin-top:10px;">
-          <div class="settings-row">
-            <span>手机本地保存位置</span>
-            <input type="text" class="form-input-sm" id="syncFilePathMobile" placeholder="如 /storage/emulated/0/Workbench/" style="width:150px;" onchange="saveSettingsPrefs()">
-          </div>
-          <div class="settings-row">
-            <span>电脑本地保存位置</span>
-            <input type="text" class="form-input-sm" id="syncFilePathPc" placeholder="如 C:\\Workbench\\" style="width:150px;" onchange="saveSettingsPrefs()">
-          </div>
-          <div class="settings-row clickable" id="rowManualSync">
-            <span>手动一键同步</span>
-            <span class="settings-row-hint">点击立即同步</span>
             <span class="arrow">›</span>
           </div>
         </div>
@@ -468,15 +448,15 @@
   <div class="fab-area" id="fabArea">
     <div class="fab-menu" id="fabMenu">
       <button class="fab-menu-item" data-action="project">
-        <span class="fab-menu-icon">📁</span>
+        <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5v-11Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg></span>
         <span class="fab-menu-label">新建项目</span>
       </button>
       <button class="fab-menu-item" data-action="task">
-        <span class="fab-menu-icon">📋</span>
+        <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M8 9h8M8 13h5M8 17h3" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg></span>
         <span class="fab-menu-label">新建任务</span>
       </button>
       <button class="fab-menu-item" data-action="habit">
-        <span class="fab-menu-icon">✅</span>
+        <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg></span>
         <span class="fab-menu-label">添加习惯</span>
       </button>
     </div>

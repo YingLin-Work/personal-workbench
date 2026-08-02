@@ -71,6 +71,12 @@ function todayKey() {
   const d = new Date();
   return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
 }
+
+// 当前时间 HH:MM（用于记录日志/体重时的默认时间）
+function nowTimeStr() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1257,8 +1263,6 @@ function renderSettingsStats() {
 
 // ========== 设置项偏好管理 ==========
 const DEFAULT_SETTINGS = {
-  syncFilePathMobile: '',
-  syncFilePathPc: '',
   workHourDecimals: '1',
   workHourUnit: 'h',
   theme: 'dark',
@@ -1275,10 +1279,6 @@ function loadSettingsPrefs() {
 function saveSettingsPrefs() {
   const sp = loadSettingsPrefs();
   // 收集UI值
-  const syncFilePathMobile = document.getElementById('syncFilePathMobile');
-  if (syncFilePathMobile) sp.syncFilePathMobile = syncFilePathMobile.value.trim();
-  const syncFilePathPc = document.getElementById('syncFilePathPc');
-  if (syncFilePathPc) sp.syncFilePathPc = syncFilePathPc.value.trim();
   const workHourDecimals = document.getElementById('workHourDecimals');
   if (workHourDecimals) sp.workHourDecimals = workHourDecimals.value;
   const workHourUnit = document.getElementById('workHourUnit');
@@ -1292,8 +1292,6 @@ function loadSettingsPrefsToUI() {
   const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
 
-  setVal('syncFilePathMobile', sp.syncFilePathMobile || '');
-  setVal('syncFilePathPc', sp.syncFilePathPc || '');
   setVal('workHourDecimals', sp.workHourDecimals);
   setVal('workHourUnit', sp.workHourUnit);
   // 标签数量
@@ -1344,14 +1342,6 @@ document.querySelectorAll('#accentPicker span').forEach(s => {
   });
 });
 
-// 编辑资料 → 打开头像/资料编辑弹层（登录账号行不再链接）
-document.getElementById('rowEditProfile')?.addEventListener('click', () => {
-  settingsPage.classList.remove('show');
-  setTimeout(() => {
-    document.getElementById('avatarWrap').click();
-  }, 300);
-});
-
 // 退出登录
 document.getElementById('rowLogout').addEventListener('click', () => {
   if (confirm('确定退出登录？')) {
@@ -1380,12 +1370,6 @@ document.getElementById('pwdSave').addEventListener('click', () => {
   saveAccounts(acc);
   pwdModal.classList.remove('show');
   showToast('密码已修改');
-});
-
-// 手动同步
-document.getElementById('rowManualSync')?.addEventListener('click', () => {
-  saveState();
-  showToast('数据已同步到本地存储 ✓');
 });
 
 // 自定义标签管理
@@ -1762,14 +1746,14 @@ function renderHealthPlan() {
   if (healthSub === 'sport') {
     const dm = parseInt(plan.durationMin || 100, 10) || 100;
     el.innerHTML = `
-      <h4>🏃 运动计划</h4>
+      <h4>运动计划</h4>
       <div class="health-plan-row"><span>周期：</span>${escapeHtml(plan.period || '未设置')}</div>
       <div class="health-plan-row"><span>运动计划时间：</span>${dm} 分钟</div>
       <div class="health-plan-row"><span>运动地点：</span>${escapeHtml(plan.location || '未设置')}</div>
       <button class="health-plan-edit" onclick="editPlan('sport')">✎ 编辑计划</button>`;
   } else if (healthSub === 'weight') {
     el.innerHTML = `
-      <h4>⚖ 体重目标</h4>
+      <h4>体重目标</h4>
       <div class="health-plan-row"><span>目标体重：</span>${escapeHtml(plan.target || '未设置')} kg</div>
       <div class="health-plan-row"><span>提醒时间：</span>${escapeHtml(plan.remindTime || '未设置')}</div>
       <button class="health-plan-edit" onclick="editPlan('weight')">✎ 编辑计划</button>`;
@@ -1831,12 +1815,20 @@ function editPlan(type) {
     const body = document.getElementById('healthLogBody');
     if (type === 'sport') {
       body.innerHTML = `
+        <label class="form-label">记录日期</label>
+        <input type="date" class="health-input" id="hlDate" value="${todayStr()}">
+        <label class="form-label">记录时间</label>
+        <input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}">
         <label class="form-label">运动时长（分钟）</label>
         <input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30">
         <label class="form-label">备注（可选）</label>
         <input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
     } else {
       body.innerHTML = `
+        <label class="form-label">记录日期</label>
+        <input type="date" class="health-input" id="hlDate" value="${todayStr()}">
+        <label class="form-label">记录时间</label>
+        <input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}">
         <label class="form-label">今日体重 (kg)</label>
         <input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
     }
@@ -1876,12 +1868,16 @@ document.getElementById('healthLogSave').addEventListener('click', () => {
     if (healthSub === 'sport') {
       const dur = parseInt(document.getElementById('hlDuration')?.value) || 0;
       const note = document.getElementById('hlNote')?.value || '';
+      const tm = document.getElementById('hlTime')?.value || nowTimeStr();
+      const dt = document.getElementById('hlDate')?.value || today;
       if (dur <= 0) { showToast('请输入运动时长'); return; }
-      h.logs.push({ id: uid(), date: today, duration: dur, note });
+      h.logs.push({ id: uid(), date: dt, time: tm, duration: dur, note });
     } else if (healthSub === 'weight') {
       const w = parseFloat(document.getElementById('hlWeight')?.value) || 0;
+      const tm = document.getElementById('hlTime')?.value || nowTimeStr();
+      const dt = document.getElementById('hlDate')?.value || today;
       if (w <= 0) { showToast('请输入体重'); return; }
-      h.logs.push({ id: uid(), date: today, weight: w });
+      h.logs.push({ id: uid(), date: dt, time: tm, weight: w });
     } else {
       const sleep = document.getElementById('hlSleepTime')?.value || '23:00';
       const wake = document.getElementById('hlWakeTime')?.value || '07:00';
@@ -2018,7 +2014,8 @@ function habitCardHTML(h) {
   let done = !!log;
   let info = '';
   if (h.type === 'water') {
-    const cups = log ? Math.floor((log.count || 0) / 300) : 0;
+    // 喝水量化：cups 表示已喝杯数（每次点击+1）；兼容旧数据中 count 为毫升(count/300=杯)
+    let cups = log ? (typeof log.cups === 'number' ? log.cups : Math.floor((log.count || 0) / 300)) : 0;
     const target = h.config.cups || 8;
     done = cups >= target;
     info = `<span class="habit-card-progress">${Math.min(cups, target)}/${target} 杯</span>`;
@@ -2079,8 +2076,8 @@ function toggleHabit(id) {
   const habit = (state.health.habits || []).find(h => h.id === id);
   if (!habit) return;
 
-  // 已打卡则取消
-  if (todayLogs[id]) {
+  // 已打卡则取消（喝水除外：喝水为计数型，不取消，重复点击累加）
+  if (todayLogs[id] && habit.type !== 'water') {
     delete todayLogs[id];
     saveState();
     renderHabits();
@@ -2109,16 +2106,20 @@ function toggleHabit(id) {
     todayLogs[id] = { time: timeStr };
     showToast(`起床时间 ${timeStr} 已记录 ✓`);
   } else if (type === 'water') {
-    const perTap = config.perTap || 300;
-    const prev = todayLogs[id] ? (todayLogs[id].count || 0) : 0;
-    const cups = config.cups || 8;
-    const newCount = prev + perTap;
-    const newCups = Math.floor(newCount / 300);
-    todayLogs[id] = { count: newCount };
-    if (newCount >= cups * 300) {
-      showToast(`喝水 +${perTap}ml，已达成今日目标 ${cups} 杯 🎉`);
+    // 每次点击 = 喝 1 杯，重复点击累计次数；达到目标后重置为新一轮
+    const target = config.cups || 8;
+    const prev = todayLogs[id] ? (todayLogs[id].cups || 0) : 0;
+    if (prev >= target) {
+      todayLogs[id] = { cups: 1 };          // 新一轮开始
+      showToast(`新一轮喝水 1/${target} 杯 ✓`);
     } else {
-      showToast(`喝水 +${perTap}ml (${newCups}/${cups} 杯) ✓`);
+      const nc = prev + 1;
+      todayLogs[id] = { cups: nc };
+      if (nc >= target) {
+        showToast(`喝水 ${nc}/${target} 杯，达成今日目标 🎉`);
+      } else {
+        showToast(`喝水 ${nc}/${target} 杯 ✓`);
+      }
     }
   } else {
     todayLogs[id] = { count: 1 };
@@ -2213,7 +2214,7 @@ function renderCampingGear() {
   const logs = campingLogs();
   const gear = (state.health.camping && state.health.camping.gear) || '';
   el.innerHTML = `
-    <div class="camping-gear-title">🎒 露营装备</div>
+    <div class="camping-gear-title">露营装备</div>
     <div class="camping-gear-stats">
       <div class="camping-gear-stat"><span class="cg-num">${logs.length}</span><span class="cg-label">露营次数</span></div>
       <div class="camping-gear-stat"><span class="cg-num">${logs.length ? logs[logs.length - 1].date.slice(5) : '—'}</span><span class="cg-label">最近露营</span></div>
@@ -2265,12 +2266,12 @@ function renderCampingBoard() {
   const topPpl = mostFrequent(logs.map(l => l.people)) || '—';
   const topCat = mostFrequent(logs.map(l => l.category)) || '—';
   el.innerHTML = `
-    <div class="camping-board-title">⛺ 露营看板</div>
+    <div class="camping-board-title">露营看板</div>
     <div class="camping-board-grid">
-      <div class="camping-board-cell"><div class="cbc-label">📍</div><div class="cbc-val">${escapeHtml(topLoc)}</div></div>
-      <div class="camping-board-cell"><div class="cbc-label">🚗</div><div class="cbc-val">${escapeHtml(topTra)}</div></div>
-      <div class="camping-board-cell"><div class="cbc-label">👥</div><div class="cbc-val">${escapeHtml(topPpl)}</div></div>
-      <div class="camping-board-cell"><div class="cbc-label">🌲</div><div class="cbc-val">${escapeHtml(topCat)}</div></div>
+      <div class="camping-board-cell"><div class="cbc-label"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 21s-6-5.2-6-10a6 6 0 1 1 12 0c0 4.8-6 10-6 10Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><circle cx="12" cy="11" r="2" stroke="currentColor" stroke-width="1.7" fill="none"/></svg></div><div class="cbc-val">${escapeHtml(topLoc)}</div></div>
+      <div class="camping-board-cell"><div class="cbc-label"><svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="6" width="13" height="12" rx="2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M16 10h3l2 3v3h-2M16 15h3M6.5 12a1 1 0 1 0 0 2 1 1 0 1 0 0-2Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 11V8M9 11V8" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg></div><div class="cbc-val">${escapeHtml(topTra)}</div></div>
+      <div class="camping-board-cell"><div class="cbc-label"><svg viewBox="0 0 24 24" width="18" height="18"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7" fill="none"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M4 19c0-2.8 2.2-5 5-5s5 2.2 5 5M14 15c2 0 4 1.6 4 4" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="cbc-val">${escapeHtml(topPpl)}</div></div>
+      <div class="camping-board-cell"><div class="cbc-label"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 21s-7-5.5-7-11a3.5 3.5 0 0 1 7-1.5A3.5 3.5 0 0 1 19 10c0 5.5-7 11-7 11Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg></div><div class="cbc-val">${escapeHtml(topCat)}</div></div>
     </div>
   `;
 }
@@ -2292,7 +2293,7 @@ function renderCampingHistory() {
         <span class="camping-history-rate">${rateEmoji[l.rating] || l.rating || ''}</span>
       </div>
       <div class="camping-history-main">
-        <div class="camping-history-loc">⛺ ${escapeHtml(l.location || '未命名地点')}</div>
+        <div class="camping-history-loc">${escapeHtml(l.location || '未命名地点')}</div>
         <div class="camping-history-tags">
           <span class="camping-chip">${escapeHtml(l.transport || '')}</span>
           <span class="camping-chip">${escapeHtml(l.people || '')}</span>
@@ -2538,9 +2539,9 @@ function renderHealthDashboard() {
     <div class="hd-section hd-section-trend">
       ${renderTrendChart()}
       <div class="hd-quick-actions">
-        <button class="hd-quick-btn sport" onclick="quickHealthLog('sport')">🏃 运动</button>
-        <button class="hd-quick-btn weight" onclick="quickHealthLog('weight')">⚖ 体重</button>
-        <button class="hd-quick-btn sleep" onclick="quickHealthLog('habit')">✅ 打卡</button>
+        <button class="hd-quick-btn sport" onclick="quickHealthLog('sport')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 运动</button>
+        <button class="hd-quick-btn weight" onclick="quickHealthLog('weight')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M13 8h2l1-2h-8l1 2h2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 体重</button>
+        <button class="hd-quick-btn sleep" onclick="quickHealthLog('habit')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M8.5 12.4 11 15l4.5-4.6" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 打卡</button>
       </div>
     </div>
   `;
@@ -2801,9 +2802,9 @@ function quickHealthLog(type) {
   document.getElementById('healthLogTitle').textContent = titleMap[type] || '记录';
   const body = document.getElementById('healthLogBody');
   if (type === 'sport') {
-    body.innerHTML = `<label class="form-label">运动时长（分钟）</label><input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30"><label class="form-label">备注（可选）</label><input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
+    body.innerHTML = `<label class="form-label">记录日期</label><input type="date" class="health-input" id="hlDate" value="${todayStr()}"><label class="form-label">记录时间</label><input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}"><label class="form-label">运动时长（分钟）</label><input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30"><label class="form-label">备注（可选）</label><input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
   } else if (type === 'weight') {
-    body.innerHTML = `<label class="form-label">今日体重 (kg)</label><input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
+    body.innerHTML = `<label class="form-label">记录日期</label><input type="date" class="health-input" id="hlDate" value="${todayStr()}"><label class="form-label">记录时间</label><input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}"><label class="form-label">今日体重 (kg)</label><input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
   }
   document.getElementById('healthLogModal').classList.add('show');
 }
