@@ -44,6 +44,15 @@ body {
   overflow-x: hidden;
 }
 
+/* ================= 隐藏滚动条（保留滚动） ================= */
+* {
+  scrollbar-width: none;            /* Firefox */
+  -ms-overflow-style: none;         /* IE / 旧Edge */
+}
+*::-webkit-scrollbar {
+  display: none;                    /* Chrome / Safari / Edge */
+}
+
 /* ================= 背景 ================= */
 .bg-aurora {
   position: fixed;
@@ -1150,6 +1159,20 @@ body {
   gap: 10px;
 }
 .form-col { min-width: 0; }
+/* 日期+时间 左右两栏（左边日期、右边时间），各自不过宽、不超出屏幕 */
+.dt-pair {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.dt-pair input[type="date"],
+.dt-pair input[type="time"] {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
 /* 健康记录里的 date/time 输入框：满宽且不超出屏幕 */
 .health-input[type="time"],
 .health-input[type="date"] {
@@ -1259,7 +1282,7 @@ body {
   padding: 16px;
   margin-bottom: 14px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
   text-align: center;
 }
@@ -1271,6 +1294,7 @@ body {
   line-height: 1;
 }
 .summary-num.accent { color: var(--accent); }
+.summary-num.done { color: var(--accent-2); }
 .summary-num.warn { color: var(--warning); }
 .summary-label { font-size: 11px; color: var(--text-2); }
 .summary-divider {

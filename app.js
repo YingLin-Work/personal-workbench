@@ -77,6 +77,20 @@ function nowTimeStr() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+// 把 datetime 串（YYYY-MM-DDTHH:MM 或 YYYY-MM-DD）拆成 { date, time }
+function splitDateTime(v) {
+  if (!v) return { date: '', time: '' };
+  const m = String(v).match(/^(\d{4}-\d{2}-\d{2})T?\s*(\d{2}:\d{2})?/);
+  return m ? { date: m[1], time: m[2] || '' } : { date: '', time: '' };
+}
+// 把 日期输入id + 时间输入id 拼成 datetime 串（无时间则只存日期）
+function joinDateTime(dateId, timeId) {
+  const date = document.getElementById(dateId)?.value || '';
+  const time = document.getElementById(timeId)?.value || '';
+  if (!date) return '';
+  return time ? `${date}T${time}` : date;
+}
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -217,9 +231,12 @@ function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ---------- 任务渲染 ----------
 function renderTasks() {
+  // 同步刷新「所有任务」栏（含已完成）
+  renderTasksAll();
   const list = document.getElementById('taskList');
   const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-  let tasks = state.tasks.slice();
+  // 今日待办：只显示当天日期（今天）的任务
+  let tasks = state.tasks.filter(t => taskDateStr(t) === todayStr());
 
   if (q) {
     tasks = tasks.filter(t => {
@@ -276,6 +293,62 @@ function renderTasks() {
 }
 
 function prioLabel(p) { return { high: '高', mid: '中', low: '低' }[p] || '中'; }
+
+// 所有任务列表（含已完成，按日期+时间排序，完成后沉底）
+function renderTasksAll() {
+  const list = document.getElementById('taskAllList');
+  if (!list) return;
+  const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+  let tasks = state.tasks.slice();
+  if (q) {
+    tasks = tasks.filter(t => {
+      const proj = (state.projects || []).find(p => p.name === t.project);
+      const tagText = ((proj && proj.tags) || []).join(' ').toLowerCase();
+      return t.title.toLowerCase().includes(q)
+        || (t.project || '').toLowerCase().includes(q)
+        || tagText.includes(q);
+    });
+  }
+  tasks.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    const ka = taskSortKey(a), kb = taskSortKey(b);
+    if (ka !== kb) return ka.localeCompare(kb);
+    const order = { high: 0, mid: 1, low: 2 };
+    return order[a.priority] - order[b.priority];
+  });
+  const cnt = document.getElementById('taskAllCount');
+  if (cnt) cnt.textContent = tasks.length;
+  if (!tasks.length) {
+    list.innerHTML = '<div class="empty-tip">还没有任务，点击底部 + 创建吧</div>';
+    return;
+  }
+  list.innerHTML = tasks.map(t => `
+    <div class="task-item ${t.done ? 'done' : ''}">
+      <div class="task-check ${t.done ? 'checked' : ''}" data-id="${t.id}"></div>
+      <div class="task-body">
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        <div class="task-meta">
+          <span><span class="task-prio ${t.priority}"></span>${prioLabel(t.priority)}</span>
+          <span>· ${escapeHtml(t.project || '无项目')}</span>
+          <span>· ${fmtTaskDateLabel(taskDateStr(t))} ${taskTimeStr(t) ? taskTimeStr(t) : ''}</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button data-edit="${t.id}">✎</button>
+        <button data-del="${t.id}">×</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.task-check').forEach(el => {
+    el.addEventListener('click', () => toggleTask(+el.dataset.id));
+  });
+  list.querySelectorAll('[data-edit]').forEach(el => {
+    el.addEventListener('click', () => openModal(+el.dataset.edit));
+  });
+  list.querySelectorAll('[data-del]').forEach(el => {
+    el.addEventListener('click', () => deleteTask(+el.dataset.del));
+  });
+}
 
 // 任务日期兼容：优先用 t.date（YYYY-MM-DD），否则旧数据视为今天
 function taskDateStr(t) {
@@ -355,13 +428,15 @@ function openModal(id) {
     document.getElementById('taskTitle').value = t.title;
     pSel.value = t.project;
     document.getElementById('taskPriority').value = t.priority;
-    document.getElementById('taskTime').value = taskToInputValue(t);
+    document.getElementById('taskDate').value = t.date || todayStr();
+    document.getElementById('taskTime').value = t.time || '';
     document.getElementById('taskNote').value = t.note || '';
   } else {
     document.getElementById('taskTitle').value = '';
     pSel.value = pSel.options[0] ? pSel.options[0].value : '';
     document.getElementById('taskPriority').value = 'mid';
-    document.getElementById('taskTime').value = defaultTaskInputValue();
+    document.getElementById('taskDate').value = todayStr();
+    document.getElementById('taskTime').value = '';
     document.getElementById('taskNote').value = '';
   }
   modal.classList.add('show');
@@ -395,14 +470,6 @@ function taskToInputValue(t) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// 默认执行时间：明天上午 9 点
-function defaultTaskInputValue() {
-  const d = new Date(Date.now() + 24 * 3600 * 1000);
-  d.setHours(9, 0, 0, 0);
-  const pad = n => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 function closeModal() {
   modal.classList.remove('show');
   editingTaskId = null;
@@ -422,8 +489,12 @@ function openProjectModal(id) {
     document.getElementById('projName').value = p.name || '';
     document.getElementById('projCode').value = p.code || '';
     document.getElementById('projType').value = p.type || '旧改建筑';
-    document.getElementById('projStart').value = p.start || '';
-    document.getElementById('projDue').value = p.due || '';
+    const sd = splitDateTime(p.start);
+    document.getElementById('projStartDate').value = sd.date;
+    document.getElementById('projStartTime').value = sd.time;
+    const dd = splitDateTime(p.due);
+    document.getElementById('projDueDate').value = dd.date;
+    document.getElementById('projDueTime').value = dd.time;
     document.getElementById('projAddress').value = p.address || '';
     document.getElementById('projNote').value = p.desc || '';
     document.getElementById('projStatus').value = p.status || 'active';
@@ -432,8 +503,10 @@ function openProjectModal(id) {
     document.getElementById('projName').value = '';
     document.getElementById('projCode').value = '';
     document.getElementById('projType').value = '旧改建筑';
-    document.getElementById('projStart').value = '';
-    document.getElementById('projDue').value = '';
+    document.getElementById('projStartDate').value = '';
+    document.getElementById('projStartTime').value = '';
+    document.getElementById('projDueDate').value = '';
+    document.getElementById('projDueTime').value = '';
     document.getElementById('projAddress').value = '';
     document.getElementById('projNote').value = '';
     document.getElementById('projStatus').value = 'active';
@@ -491,8 +564,8 @@ document.getElementById('projectSave').addEventListener('click', () => {
     name,
     code: document.getElementById('projCode').value.trim(),
     type: document.getElementById('projType').value,
-    start: document.getElementById('projStart').value,
-    due: document.getElementById('projDue').value,
+    start: joinDateTime('projStartDate', 'projStartTime'),
+    due: joinDateTime('projDueDate', 'projDueTime'),
     address: document.getElementById('projAddress').value.trim(),
     desc: document.getElementById('projNote').value.trim(),
     status: document.getElementById('projStatus').value,
@@ -538,14 +611,10 @@ document.getElementById('projectDel')?.addEventListener('click', () => {
 document.getElementById('modalSave').addEventListener('click', () => {
   const title = document.getElementById('taskTitle').value.trim();
   if (!title) { showToast('请输入任务标题'); return; }
-  // 解析 datetime-local → { date: 'YYYY-MM-DD', time: 'HH:MM' }
-  const dtRaw = document.getElementById('taskTime').value;
-  let date = '', time = '';
-  if (dtRaw) {
-    const m = String(dtRaw).match(/^(\d{4}-\d{2}-\d{2})T?\s*(\d{2}:\d{2})?/);
-    if (m) { date = m[1]; time = m[2] || ''; }
-  }
-  if (!date) { showToast('请选择执行时间'); return; }
+  // 执行时间拆为左右两栏：taskDate(日期) + taskTime(时间)
+  const date = document.getElementById('taskDate')?.value || '';
+  const time = document.getElementById('taskTime')?.value || '';
+  if (!date) { showToast('请选择执行日期'); return; }
   const data = {
     title,
     project: document.getElementById('taskProject').value,
@@ -608,7 +677,8 @@ function initCalendar() {
 function initCollapsible() {
   const sections = [
     { header: 'todayTasksHeader', body: 'todayTasksBody', arrow: 'todayTasksArrow' },
-    { header: 'weekTasksHeader', body: 'weekTasksBody', arrow: 'weekTasksArrow' }
+    { header: 'weekTasksHeader', body: 'weekTasksBody', arrow: 'weekTasksArrow' },
+    { header: 'allTasksHeader', body: 'allTasksBody', arrow: 'allTasksArrow' }
   ];
   sections.forEach(({ header, body }) => {
     const h = document.getElementById(header);
@@ -800,8 +870,9 @@ function renderProjects() {
   const projects = state.projects || [];
   document.getElementById('projCount').textContent = projects.length;
 
-  // 顶部汇总：总项目 / 进行中 / 已暂停
+  // 顶部汇总：总项目 / 进行中 / 已完成 / 已暂停
   const active = projects.filter(p => p.status === 'active').length;
+  const done = projects.filter(p => p.status === 'done').length;
   const paused = projects.filter(p => p.status === 'paused').length;
   document.getElementById('projSummary').innerHTML = `
     <div class="summary-cell">
@@ -811,6 +882,10 @@ function renderProjects() {
     <div class="summary-cell">
       <div class="summary-num accent">${active}</div>
       <div class="summary-label">进行中</div>
+    </div>
+    <div class="summary-cell">
+      <div class="summary-num done">${done}</div>
+      <div class="summary-label">已完成</div>
     </div>
     <div class="summary-cell">
       <div class="summary-num warn">${paused}</div>
@@ -2498,9 +2573,14 @@ function renderHealthDashboard() {
   const weight = state.health.weight || { plan: {}, logs: [] };
   const habits = state.health.habits || [];
 
+  // 本周（周一~周日）为完整一周，作为运动计时统计范围
+  const weekStartDate = new Date();
+  const dow = weekStartDate.getDay();
+  const monOffset = dow === 0 ? -6 : 1 - dow;
+  weekStartDate.setDate(weekStartDate.getDate() + monOffset);
   const weekDays = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStartDate); d.setDate(weekStartDate.getDate() + i);
     weekDays.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   }
   const weekSet = new Set(weekDays);

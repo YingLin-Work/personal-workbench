@@ -254,6 +254,23 @@
           <div class="event-list" id="eventList"></div>
         </div>
       </div>
+
+      <!-- 所有任务（可折叠，含已完成） -->
+      <div class="collapsible-section">
+        <button class="collapse-header" id="allTasksHeader">
+          <span class="collapse-title">
+            <span class="collapse-icon"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M4 6h11M4 12h11M4 18h11" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/><circle cx="19" cy="6" r="0.8" fill="currentColor"/><circle cx="19" cy="12" r="0.8" fill="currentColor"/><circle cx="19" cy="18" r="0.8" fill="currentColor"/></svg></span>
+            所有任务
+          </span>
+          <span class="collapse-meta">
+            <span class="badge" id="taskAllCount">0</span>
+            <span class="collapse-arrow" id="allTasksArrow">▾</span>
+          </span>
+        </button>
+        <div class="collapse-body" id="allTasksBody">
+          <div class="task-list" id="taskAllList"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ========== 项目管理页 ========== -->
@@ -708,7 +725,10 @@
           </div>
           <div class="form-col datetime-col">
             <label class="form-label">执行时间</label>
-            <input type="datetime-local" id="taskTime" value="">
+            <div class="dt-pair">
+              <input type="date" id="taskDate" value="">
+              <input type="time" id="taskTime" value="">
+            </div>
           </div>
         </div>
 
@@ -743,15 +763,15 @@
           <option value="室内全案设计">室内全案设计</option>
           <option value="展厅方案设计">展厅方案设计</option>
         </select>
-        <div class="form-row">
-          <div class="form-col datetime-col">
-            <label class="form-label">起始时间</label>
-            <input type="datetime-local" id="projStart">
-          </div>
-          <div class="form-col datetime-col">
-            <label class="form-label">预计完成时间</label>
-            <input type="datetime-local" id="projDue">
-          </div>
+        <label class="form-label">起始时间</label>
+        <div class="dt-pair">
+          <input type="date" id="projStartDate">
+          <input type="time" id="projStartTime">
+        </div>
+        <label class="form-label">预计完成时间</label>
+        <div class="dt-pair">
+          <input type="date" id="projDueDate">
+          <input type="time" id="projDueTime">
         </div>
         <label class="form-label">项目地址</label>
         <input type="text" id="projAddress" placeholder="例如：https://xxx.com 或物理位置">
