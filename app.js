@@ -1,5 +1,8 @@
 /* ============== 个人工作台 - 业务逻辑 ============== */
 
+// ---------- 版本 ----------
+const APP_VERSION = '1.0.0';   // 语义化版本号，发版后同步 git tag
+
 // ---------- 存储：账号注册表 + 会话 ----------
 const STORAGE_KEY = 'workbench_accounts_v1';  // 所有用户数据
 const SESSION_KEY = 'workbench_session_v1';   // 当前登录用户名
@@ -1334,6 +1337,9 @@ const SETTINGS_PREFS_KEY = 'workbench_settings_prefs_v1';
 function openSettings() {
   renderSettingsStats();
   loadSettingsPrefsToUI();
+  // 显示版本号
+  const vt = document.getElementById('appVersionText');
+  if (vt) vt.textContent = 'v' + APP_VERSION;
   // 登录账号栏显示当前登录名
   const lan = document.getElementById('loginAccountName');
   if (lan) lan.textContent = currentUser || '—';
