@@ -110,18 +110,16 @@ body {
 .avatar-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px 6px 6px;
-  border-radius: 16px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
 }
-.avatar-wrapper:hover { background: rgba(255,255,255,0.06); }
+.avatar-wrapper:hover { background: rgba(255,255,255,0.05); }
 .avatar-wrapper:active { transform: scale(0.97); }
 .avatar {
   width: 36px;
@@ -253,6 +251,10 @@ body {
 .stat-meta .down { color: var(--danger); font-weight: 600; }
 .stat-card.danger { border-color: rgba(255, 90, 95, 0.3); }
 .stat-card.danger .stat-value { color: var(--danger); }
+/* 暂停任务卡：配色与项目页「已暂停」一致（warning 橙黄） */
+.stat-card.paused { border-color: rgba(255, 184, 74, 0.35); }
+.stat-card.paused .stat-value { color: var(--warning); }
+.stat-card.paused .stat-meta .down { color: var(--warning); }
 
 /* ================= 进度飞轮 + 年度柱状图 ================= */
 .progress-section {
@@ -1420,6 +1422,78 @@ body {
 }
 .project-full-foot .member-dot:first-child { margin-left: 0; }
 
+/* 项目卡片：左下角编辑按钮（仅图标 + 灰色框，红色文字去掉） */
+.project-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s;
+}
+.project-edit-btn:hover { color: var(--text-1); background: rgba(255,255,255,0.06); }
+.project-edit-btn svg { display: block; }
+
+/* 项目任务展开面板（点卡片主体展开） */
+.project-tasks-panel {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin 0.3s ease;
+  margin: 0;
+}
+.project-full-card-wrap.open .project-tasks-panel {
+  max-height: 480px;
+  overflow-y: auto;
+  opacity: 1;
+  margin: 10px 10px 0;                 /* 收窄：左右各缩 10px，与卡片区分 */
+  background: #253745;                 /* 深青底，与项目卡片玻璃底区分 */
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.pt-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.pt-group-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 8px 0 4px;
+}
+.pt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+}
+.pt-row:last-child { border-bottom: none; }
+.pt-flag {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pt-flag.high { background: var(--danger); }
+.pt-flag.mid { background: var(--warning); }
+.pt-flag.low { background: var(--accent-2); }
+.pt-title { flex: 1; color: var(--text-0); word-break: break-all; }
+.pt-time { font-size: 11px; color: var(--text-2); flex-shrink: 0; }
+.pt-row.done .pt-title { color: var(--text-2); text-decoration: line-through; }
+.pt-row.done .pt-flag { opacity: 0.4; }
+.pt-empty { font-size: 12px; color: var(--text-2); padding: 6px 0; }
+
 /* ================= 登录页 ================= */
 .auth-page {
   position: fixed;
@@ -2309,6 +2383,9 @@ body.theme-light .search-bar input {
   margin-top: 2px;
 }
 .hd-card.accent .hd-card-val { color: var(--accent); }
+/* 运动计划 / 今日打卡：达标绿色，不达标橙黄 */
+.hd-card-val.ok { color: var(--accent); }
+.hd-card-val.warn { color: var(--warning); }
 
 .hd-plan {
   font-size: 12px;
@@ -2419,7 +2496,8 @@ body.theme-light .search-bar input {
 }
 .sleep-gray { background: rgba(255,255,255,0.06); }
 .sleep-blue { background: var(--accent-2); opacity: 0.7; }
-.sleep-lightblue { background: rgba(74, 214, 255, 0.35); }
+/* 放松段：与睡眠段同色同透明度，0:00 以下视觉上只有蓝、灰两种 */
+.sleep-lightblue { background: var(--accent-2); opacity: 0.7; }
 .sleep-green { background: var(--accent); opacity: 0.8; }
 .sleep-bar-label {
   font-size: 9px;

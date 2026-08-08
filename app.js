@@ -907,36 +907,77 @@ function renderProjects() {
     const pct = projTasks.length ? Math.round(done / total * 100) : (p.status === 'done' ? 100 : 0);
     const tagChips = (p.tags || []).map(t => `<span class="proj-tag-chip">${escapeHtml(t)}</span>`).join('');
 
+    // 该项目任务：未完成在前、已完成在后，各自按时间排序
+    const sortByTime = (a, b) => (taskSortKey(a) || '').localeCompare(taskSortKey(b) || '');
+    const pendingList = projTasks.filter(t => !t.done).sort(sortByTime);
+    const doneList = projTasks.filter(t => t.done).sort(sortByTime);
+    const taskRow = t => `
+      <div class="pt-row ${t.done ? 'done' : ''}">
+        <span class="pt-flag ${t.priority}"></span>
+        <span class="pt-title">${escapeHtml(t.title)}</span>
+        <span class="pt-time">${fmtTaskDateLabel(taskDateStr(t))} ${taskTimeStr(t) ? taskTimeStr(t) : ''}</span>
+      </div>`;
+    const pendingHtml = pendingList.length
+      ? `<div class="pt-group-title">未完成（${pendingList.length}）</div>` + pendingList.map(taskRow).join('')
+      : '';
+    const doneHtml = doneList.length
+      ? `<div class="pt-group-title">已完成（${doneList.length}）</div>` + doneList.map(taskRow).join('')
+      : '';
+    const tasksPanel = (pendingHtml || doneHtml)
+      ? `<div class="project-tasks-panel">
+           <div class="pt-head">项目任务 · 共 ${projTasks.length} 个</div>
+           ${pendingHtml}${doneHtml}
+           ${projTasks.length ? '' : '<div class="pt-empty">暂无任务</div>'}
+         </div>`
+      : `<div class="project-tasks-panel"><div class="pt-empty">该项目暂无任务</div></div>`;
+
     return `
-      <div class="project-full-card clickable" data-project-id="${p.id}">
-        <div class="project-full-head">
-          <div>
-            <div class="project-full-title">${escapeHtml(p.name)} <span class="project-full-edit-hint">✎</span></div>
-            <div class="project-full-desc">${p.type ? '<span class="chip">' + escapeHtml(p.type) + '</span>' : ''} ${escapeHtml(p.desc || '')}</div>
+      <div class="project-full-card-wrap" data-project-id="${p.id}">
+        <div class="project-full-card">
+          <div class="project-full-head">
+            <div>
+              <div class="project-full-title">${escapeHtml(p.name)}</div>
+              <div class="project-full-desc">${p.type ? '<span class="chip">' + escapeHtml(p.type) + '</span>' : ''} ${escapeHtml(p.desc || '')}</div>
+            </div>
+            <span class="project-full-tag ${p.status}">${STATUS_LABEL[p.status] || '进行中'}</span>
           </div>
-          <span class="project-full-tag ${p.status}">${STATUS_LABEL[p.status] || '进行中'}</span>
-        </div>
-        ${tagChips ? `<div class="proj-full-tags">${tagChips}</div>` : ''}
-        <div class="project-progress-row">
-          <span>${done}/${projTasks.length} 任务</span>
-          <span class="pct">${pct}%</span>
-        </div>
-        <div class="project-progress-bar">
-          <div class="project-progress-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="project-full-foot">
-          <div class="members">
-            ${(p.members || []).map(m => `<span class="member-dot">${escapeHtml(m.slice(0, 2))}</span>`).join('')}
+          ${tagChips ? `<div class="proj-full-tags">${tagChips}</div>` : ''}
+          <div class="project-progress-row">
+            <span>${done}/${projTasks.length} 任务</span>
+            <span class="pct">${pct}%</span>
           </div>
-          <span>${fmtProjectWindow(p)} · ${escapeHtml(p.address || '未设地址')}</span>
+          <div class="project-progress-bar">
+            <div class="project-progress-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="project-full-foot">
+            <div class="project-edit-btn" title="编辑项目信息">
+              <svg viewBox="0 0 24 24" width="15" height="15"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3Z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/></svg>
+            </div>
+            <span>${fmtProjectWindow(p)} · ${escapeHtml(p.address || '未设地址')}</span>
+          </div>
         </div>
+        ${tasksPanel}
       </div>
     `;
   }).join('');
 
-  // 点卡片进入编辑详情
-  list.querySelectorAll('[data-project-id]').forEach(el => {
-    el.addEventListener('click', () => openProjectModal(el.dataset.projectId));
+  // 点卡片主体 → 展开/收起该项目任务（同一时间只展开一个，自动收起其他的）
+  list.querySelectorAll('.project-full-card').forEach(el => {
+    el.addEventListener('click', function(e) {
+      if (e.target.closest('.project-edit-btn')) return; // 编辑按钮不触发展开
+      const wrap = this.closest('.project-full-card-wrap');
+      const wasOpen = wrap.classList.contains('open');
+      // 先收起其它已展开的项目卡片
+      list.querySelectorAll('.project-full-card-wrap.open').forEach(w => w.classList.remove('open'));
+      if (!wasOpen) wrap.classList.add('open');
+    });
+  });
+  // 点左下角「编辑」图标 → 编辑项目信息
+  list.querySelectorAll('.project-edit-btn').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openProjectModal(el.closest('.project-full-card-wrap').dataset.projectId);
+    });
   });
 }
 
@@ -967,7 +1008,6 @@ function renderOverview() {
     const projects = state.projects;
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter(t => t.done).length;
-    const overdueTasks = 0;
 
     // 四张统计卡
     const elTotal = document.getElementById('statTotalProj');
@@ -980,35 +1020,40 @@ function renderOverview() {
     const elActiveTrend = document.getElementById('statActiveTrend');
     if (elActiveTrend) elActiveTrend.textContent = '—';
 
-    const elDone = document.getElementById('statDone');
-    if (elDone) elDone.textContent = doneTasks;
-    const elDoneTrend = document.getElementById('statDoneTrend');
-    if (elDoneTrend) elDoneTrend.textContent = totalTasks ? Math.round(doneTasks/totalTasks*100) + '%' : '—';
-
-    const elOver = document.getElementById('statOverdue');
-    if (elOver) elOver.textContent = overdueTasks;
-    const elOverSub = document.getElementById('statOverdueSub');
-    if (elOverSub) elOverSub.textContent = overdueTasks;
-
-    // 本月项目进度（项目维度：已完成项目数 / 总项目数）
-    const totalProj = projects.length;
+    // 「已完成」= 已完成项目数（关联项目页顶部的已完成汇总）
     const doneProj = projects.filter(p => p.status === 'done').length;
-    const projPct = totalProj ? Math.round(doneProj / totalProj * 100) : 0;
+    const elDone = document.getElementById('statDone');
+    if (elDone) elDone.textContent = doneProj;
+    const elDoneTrend = document.getElementById('statDoneTrend');
+    if (elDoneTrend) elDoneTrend.textContent = projects.length ? Math.round(doneProj/projects.length*100) + '%' : '—';
 
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
-    const today = d.getDate();
+    // 「暂停任务」= 已暂停项目数（关联项目页顶部的已暂停汇总）
+    const pausedProj = projects.filter(p => p.status === 'paused').length;
+    const elPaused = document.getElementById('statPaused');
+    if (elPaused) elPaused.textContent = pausedProj;
+    const elPausedSub = document.getElementById('statPausedSub');
+    if (elPausedSub) elPausedSub.textContent = pausedProj;
+
+    // 本月进度：日期在当月的所有任务（当月已完成 / 当月所有）
+    const d0 = new Date();
+    const year0 = d0.getFullYear();          // 为区分下面 month 变量，用 year0
+    const month0 = d0.getMonth() + 1;
+    const monthTasks = tasks.filter(t => {
+      const dt = taskDateStr(t);
+      return dt.startsWith(`${year0}-${String(month0).padStart(2, '0')}`);
+    });
+    const monthDone = monthTasks.filter(t => t.done).length;
+    const monthPct = monthTasks.length ? Math.round(monthDone / monthTasks.length * 100) : 0;
 
     const elLabel = document.getElementById('progressDateLabel');
-    if (elLabel) elLabel.textContent = `${year}年 ${month}月 · 本月进度`;
+    if (elLabel) elLabel.textContent = `${year0}年 ${month0}月 · 本月任务进度`;
     const elPct = document.getElementById('circlePct');
-    if (elPct) elPct.textContent = projPct + '%';
+    if (elPct) elPct.textContent = monthPct + '%';
     const elDays = document.getElementById('progressDays');
-    if (elDays) elDays.innerHTML = `已完成 <strong>${doneProj}</strong>/${totalProj} 个项目`;
+    if (elDays) elDays.innerHTML = `已完成 <strong>${monthDone}</strong>/${monthTasks.length} 个任务`;
     const elCirc = document.getElementById('progressCircle');
     if (elCirc) elCirc.style.background =
-      `conic-gradient(var(--accent) 0% ${projPct}%, rgba(255,255,255,0.08) ${projPct}% 100%)`;
+      `conic-gradient(var(--accent) 0% ${monthPct}%, rgba(255,255,255,0.08) ${monthPct}% 100%)`;
 
     // 年度柱状图：按项目创建月份(start)统计每月新增项目数
     const BAR_H = 70;          // 柱子总高度（px）固定
@@ -1021,7 +1066,7 @@ function renderOverview() {
     const newPerMonth = new Array(12).fill(0);
     projects.forEach(p => {
       const s = projMonth(p);
-      if (s && s.y === year && s.m >= 1 && s.m <= 12) newPerMonth[s.m - 1]++;
+      if (s && s.y === year0 && s.m >= 1 && s.m <= 12) newPerMonth[s.m - 1]++;
     });
     const maxMonth = Math.max(1, ...newPerMonth);   // 避免除以0
     const chartBars = document.getElementById('chartBars');
@@ -2598,7 +2643,7 @@ function renderHealthDashboard() {
     <div class="hd-row">
       <div class="hd-card">
         <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val">${todaySportMin}/${planMin}</div>
+        <div class="hd-card-val ${todaySportMin >= planMin ? 'ok' : 'warn'}">${todaySportMin}/${planMin}</div>
         <div class="hd-card-label">运动计划</div>
       </div>
       <div class="hd-card accent">
@@ -2608,7 +2653,7 @@ function renderHealthDashboard() {
       </div>
       <div class="hd-card">
         <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.2 12.4 11 15.2l5-5.4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val">${todayCount}/${habits.length}</div>
+        <div class="hd-card-val ${todayCount >= habits.length ? 'ok' : 'warn'}">${todayCount}/${habits.length}</div>
         <div class="hd-card-label">今日打卡</div>
       </div>
     </div>
@@ -2637,18 +2682,24 @@ function renderHealthDashboard() {
       days14.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
     }
 
-    // 柱子纵向范围：前一天 20:00（底部） → 当天 12:00（顶部）
+    // 柱子纵向范围：前一天 22:00（底部） → 当天 10:00（顶部）
     // 中间虚线 = 当天 0:00
     // 虚线向上：0:00 → 起床时间（当天睡段）
     // 虚线向下：0:00 → 入睡时间（前夜睡段）
 
-    const COL_H = 144;  // 16 小时 = 144px（1 小时 = 9px）
+    const COL_H = 144;  // 12 小时 = 144px（1 小时 = 12px）
     // 以当天 0:00 为基准（相对分钟）：
-    //   前一天 20:00 = -240，当天 0:00 = 0，当天 12:00 = +720
-    const RANGE = [-240, 720];               // 范围 960 分钟 = 16 小时
+    //   前一天 22:00 = -120，当天 0:00 = 0，当天 10:00 = +600
+    const RANGE = [-120, 600];               // 范围 720 分钟 = 12 小时
     function parseHM(str) {
       const m = String(str || '').match(/^(\d{1,2}):(\d{2})/);
       return m ? { h: parseInt(m[1], 10), m: parseInt(m[2], 10) } : null;
+    }
+    // 把 HH:MM 归到最近的整点/半点（半小时一个档位）
+    function roundHalf(p) {
+      const total = p.h * 60 + p.m;
+      const r = Math.round(total / 30) * 30;
+      return { h: (Math.floor(r / 60)) % 24, m: r % 60 };
     }
     function toRel(h, m) {
       // h>=12 时视为"前一天晚上"，否则视为"当天"
@@ -2679,11 +2730,11 @@ function renderHealthDashboard() {
 
     let html = '<div class="hd-sleep-title">14天睡眠记录</div>';
     html += '<div class="sleep-chart-wrap">';
-    // 左侧时间刻度：12:00 / 0:00 / 20:00（纵向对应柱子的顶 / 虚线 / 底）
+    // 左侧时间刻度：10:00 / 0:00 / 22:00（纵向对应柱子的顶 / 虚线 / 底）
     html += '<div class="sleep-axis">'
-      +     '<span class="sleep-axis-label" style="top:2px">12:00</span>'
+      +     '<span class="sleep-axis-label" style="top:2px">10:00</span>'
       +     '<span class="sleep-axis-label" style="top:' + (yMid - 6) + 'px">0:00</span>'
-      +     '<span class="sleep-axis-label" style="bottom:2px">20:00</span>'
+      +     '<span class="sleep-axis-label" style="bottom:2px">22:00</span>'
       +   '</div>';
     // 柱子区
     html += '<div class="sleep-chart-bars">';
@@ -2698,11 +2749,11 @@ function renderHealthDashboard() {
         const prev = new Date(d + 'T00:00'); prev.setDate(prev.getDate() - 1);
         const prevKey = isoDate(prev);
         const bt = dayTime(prevKey, sleepIds);
-        if (bt) { const p = parseHM(bt); if (p) { bed = p; hasData = true; } }
+        if (bt) { const p = parseHM(bt); if (p) { bed = roundHalf(p); hasData = true; } }
       }
       if (wakeIds.length) {
         const wt = dayTime(d, wakeIds);
-        if (wt) { const p = parseHM(wt); if (p) { wake = p; hasData = true; } }
+        if (wt) { const p = parseHM(wt); if (p) { wake = roundHalf(p); hasData = true; } }
       }
       // 放松段 = 入睡前 30 分钟
       const relaxH = (bed.h * 60 + bed.m - 30);
