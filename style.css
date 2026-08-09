@@ -956,10 +956,14 @@ body {
 .collapse-header.collapsed .collapse-arrow { transform: rotate(-90deg); }
 .collapse-body {
   max-height: 600px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   transition: max-height 0.25s ease, padding 0.25s ease;
   padding: 0 16px 16px;
 }
+.collapse-body::-webkit-scrollbar { display: none; }
 .collapse-body.collapsed {
   max-height: 0;
   padding: 0 16px;
