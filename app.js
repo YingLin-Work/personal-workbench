@@ -1,7 +1,7 @@
 /* ============== 个人工作台 - 业务逻辑 ============== */
 
 // ---------- 版本 ----------
-const APP_VERSION = '1.1.0';   // 语义化版本号，发版后同步 git tag
+const APP_VERSION = '1.1.1';   // 语义化版本号，发版后同步 git tag
 
 // ---------- 存储：账号注册表 + 会话 ----------
 const STORAGE_KEY = 'workbench_accounts_v1';  // 所有用户数据
@@ -17,16 +17,14 @@ function defaultUserData() {
   const d2 = new Date(); d2.setDate(d2.getDate() + 2); d2.setHours(18, 0, 0, 0); const t2 = fmtFullDate(d2);
   return {
     tasks: [
-      { id: 1, title: '现场勘察旧改建筑结构', project: '老洋房室内改造', priority: 'high', date: today, time: '10:00', note: '记录承重墙位置', done: false },
-      { id: 2, title: '展厅展示动线初稿', project: '精品艺术展厅设计', priority: 'mid', date: date1, time: '14:00', note: '', done: false },
-      { id: 3, title: '别墅软装选品清单', project: '法式别墅全案', priority: 'high', date: date2, time: '16:00', note: '', done: false },
-      { id: 4, title: 'Loft 隔层方案对比', project: 'Loft 空间改造', priority: 'low', date: today, time: '18:00', note: '', done: true }
+      { id: 1, title: '完成本周周报', project: '日常工作', priority: 'high', date: today, time: '10:00', note: '汇总本周工作进展', done: false },
+      { id: 2, title: '回复客户邮件', project: '日常工作', priority: 'mid', date: date1, time: '14:00', note: '', done: false },
+      { id: 3, title: '准备周五会议材料', project: '日常工作', priority: 'high', date: date2, time: '16:00', note: '', done: false },
+      { id: 4, title: '整理学习笔记', project: '学习提升', priority: 'low', date: today, time: '18:00', note: '', done: true }
     ],
     projects: [
-      { id: 'p1', name: '老洋房室内改造', code: 'YX-JG-2026-001', type: '旧改建筑', status: 'active', desc: '梳理老洋房勘察反馈，确定改造范围', address: '上海市徐汇区', start: t1, due: t2, members: ['我'] },
-      { id: 'p2', name: '精品艺术展厅设计', code: 'YX-ZT-2026-002', type: '展厅方案设计', status: 'active', desc: '完成展厅平面与展示动线方案', address: '上海市黄浦区', start: t1, due: t2, members: ['我'] },
-      { id: 'p3', name: '法式别墅全案', code: 'YX-BS-2026-003', type: '别墅方案设计', status: 'active', desc: '优化别墅整体硬装与软装方案', address: '', start: t2, due: '', members: ['我'] },
-      { id: 'p4', name: 'Loft 空间改造', code: 'YX-KJ-2026-004', type: '室内空间改造', status: 'paused', desc: '与业主对齐隔层方案与预算', address: '', start: t2, due: '', members: ['我'] }
+      { id: 'p1', name: '日常工作', code: '', type: '旧改建筑', status: 'active', desc: '处理日常工作任务，保持进度稳定', address: '', start: t1, due: t2, members: ['我'] },
+      { id: 'p2', name: '学习提升', code: '', type: '室内全案设计', status: 'active', desc: '持续学习行业知识，提升专业能力', address: '', start: t1, due: t2, members: ['我'] }
     ],
     events: {
       [todayKey()]: [
@@ -165,6 +163,7 @@ function saveState() {
     const acc = loadAccounts();
     acc[currentUser].data = state;
     saveAccounts(acc);
+    maybeWarnBackup();
   } catch (e) {
     showToast('保存失败：浏览器存储不可用');
   }
@@ -197,6 +196,18 @@ const PAGE_TITLES = {
   health: '健康管理'
 };
 
+// 切换到指定 Tab
+function switchToTab(tab) {
+  const btn = document.querySelector(`.tab[data-tab="${tab}"]`);
+  if (!btn) return;
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page' + capitalize(tab)).classList.add('active');
+  const titleEl = document.getElementById('pageTitle');
+  if (titleEl) titleEl.textContent = PAGE_TITLES[tab] || '个人工作台';
+}
+
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const tab = btn.dataset.tab;
@@ -207,15 +218,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     }
     // 关闭 FAB 菜单
     closeFabMenu();
-
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page' + capitalize(tab)).classList.add('active');
-
-    // 更新顶部标题
-    const titleEl = document.getElementById('pageTitle');
-    if (titleEl) titleEl.textContent = PAGE_TITLES[tab] || '个人工作台';
+    switchToTab(tab);
   });
 });
 
@@ -230,6 +233,16 @@ function closeFabMenu() {
   document.getElementById('fabBtn').classList.remove('active');
 }
 
+// 点击菜单/按钮外部任意位置，自动收起 FAB 新建列表
+document.addEventListener('click', e => {
+  if (!fabOpen) return;
+  const fabMenu = document.getElementById('fabMenu');
+  const fabBtn = document.getElementById('fabBtn');
+  if (fabMenu && fabMenu.contains(e.target)) return;   // 点菜单项内不收
+  if (fabBtn && fabBtn.contains(e.target)) return;      // 点加号按钮内不收（toggle 自己处理）
+  closeFabMenu();
+});
+
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 // ---------- 任务渲染 ----------
@@ -238,8 +251,16 @@ function renderTasks() {
   renderTasksAll();
   const list = document.getElementById('taskList');
   const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
-  // 今日待办：只显示当天日期（今天）的任务
-  let tasks = state.tasks.filter(t => taskDateStr(t) === todayStr());
+  const today = todayStr();
+  const doneDisplay = loadSettingsPrefs().doneTaskDisplay || 'bottom';
+  const showDone = doneDisplay !== 'hide';
+  // 判断是否逾期（未完成且日期早于今天）
+  const isOverdue = t => !t.done && taskDateStr(t) < today;
+  // 今日待办：今天任务 + 逾期任务（未完成）；strike/bottom 模式下也显示今日已完成
+  let tasks = state.tasks.filter(t => {
+    if (taskDateStr(t) === today) return showDone || !t.done;
+    return isOverdue(t);
+  });
 
   if (q) {
     tasks = tasks.filter(t => {
@@ -251,9 +272,11 @@ function renderTasks() {
     });
   }
 
-  // 按日期+时间排序（同日期按优先级），完成后沉底
+  // 排序：今天任务优先，其次逾期任务；bottom 模式下已完成沉底
   tasks.sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
+    const aToday = taskDateStr(a) === today, bToday = taskDateStr(b) === today;
+    if (aToday !== bToday) return aToday ? -1 : 1;
+    if (doneDisplay === 'bottom' && a.done !== b.done) return a.done ? 1 : -1;
     const ka = taskSortKey(a), kb = taskSortKey(b);
     if (ka !== kb) return ka.localeCompare(kb);
     const order = { high: 0, mid: 1, low: 2 };
@@ -266,23 +289,26 @@ function renderTasks() {
     list.innerHTML = '<div class="empty-tip">还没有任务，点击底部 + 创建吧</div>';
     return;
   }
-  list.innerHTML = tasks.map(t => `
-    <div class="task-item ${t.done ? 'done' : ''}">
+  list.innerHTML = tasks.map(t => {
+    const overdue = isOverdue(t);
+    const dateLabel = overdue ? `<span class="task-date-overdue">逾期 ${overdueDays(taskDateStr(t))} 天</span>` : `${fmtTaskDateLabel(taskDateStr(t))}`;
+    return `
+    <div class="task-item ${overdue ? 'task-overdue' : ''} ${t.done ? 'done' : ''}">
       <div class="task-check ${t.done ? 'checked' : ''}" data-id="${t.id}"></div>
       <div class="task-body">
         <div class="task-title">${escapeHtml(t.title)}</div>
         <div class="task-meta">
           <span><span class="task-prio ${t.priority}"></span>${prioLabel(t.priority)}</span>
           <span>· ${escapeHtml(t.project || '无项目')}</span>
-          <span>· ${fmtTaskDateLabel(taskDateStr(t))} ${taskTimeStr(t) ? taskTimeStr(t) : ''}</span>
+          <span>· ${dateLabel} ${taskTimeStr(t) ? taskTimeStr(t) : ''}</span>
         </div>
       </div>
       <div class="task-actions">
         <button data-edit="${t.id}">✎</button>
         <button data-del="${t.id}">×</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   list.querySelectorAll('.task-check').forEach(el => {
     el.addEventListener('click', () => toggleTask(+el.dataset.id));
@@ -295,6 +321,13 @@ function renderTasks() {
   });
 }
 
+// 逾期天数（dateStr < today 时计算相差天数）
+function overdueDays(dateStr) {
+  const d1 = new Date(dateStr + 'T00:00:00');
+  const d2 = new Date(todayStr() + 'T00:00:00');
+  return Math.round((d2 - d1) / 86400000);
+}
+
 function prioLabel(p) { return { high: '高', mid: '中', low: '低' }[p] || '中'; }
 
 // 所有任务列表（含已完成，按日期+时间排序，完成后沉底）
@@ -302,7 +335,10 @@ function renderTasksAll() {
   const list = document.getElementById('taskAllList');
   if (!list) return;
   const q = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+  const doneDisplay = loadSettingsPrefs().doneTaskDisplay || 'bottom';
   let tasks = state.tasks.slice();
+  // hide 模式下过滤掉已完成任务
+  if (doneDisplay === 'hide') tasks = tasks.filter(t => !t.done);
   if (q) {
     tasks = tasks.filter(t => {
       const proj = (state.projects || []).find(p => p.name === t.project);
@@ -313,7 +349,8 @@ function renderTasksAll() {
     });
   }
   tasks.sort((a, b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
+    // bottom 模式：已完成沉底
+    if (doneDisplay === 'bottom' && a.done !== b.done) return a.done ? 1 : -1;
     const ka = taskSortKey(a), kb = taskSortKey(b);
     if (ka !== kb) return ka.localeCompare(kb);
     const order = { high: 0, mid: 1, low: 2 };
@@ -437,7 +474,7 @@ function openModal(id) {
   } else {
     document.getElementById('taskTitle').value = '';
     pSel.value = pSel.options[0] ? pSel.options[0].value : '';
-    document.getElementById('taskPriority').value = 'mid';
+    document.getElementById('taskPriority').value = loadSettingsPrefs().defaultPriority || 'mid';
     document.getElementById('taskDate').value = todayStr();
     document.getElementById('taskTime').value = '';
     document.getElementById('taskNote').value = '';
@@ -482,16 +519,54 @@ function closeModal() {
 const projectModal = document.getElementById('projectModal');
 let editingProjectId = null;
 
+// 动态填充项目类型下拉（含"自定义"选项）
+function refreshProjTypeOptions() {
+  const sel = document.getElementById('projType');
+  if (!sel) return;
+  const sp = loadSettingsPrefs();
+  const types = sp.projectTypes || [];
+  const prev = sel.value;
+  let html = types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  html += '<option value="__custom__">+ 自定义…</option>';
+  sel.innerHTML = html;
+  // 尝试恢复之前的选择
+  if (prev && prev !== '__custom__' && types.includes(prev)) sel.value = prev;
+  else if (types.length) sel.value = types[0];
+  // 自定义输入框联动
+  const customInput = document.getElementById('projTypeCustom');
+  if (customInput) {
+    customInput.style.display = sel.value === '__custom__' ? 'block' : 'none';
+  }
+}
+
+// 项目类型 select 变化时联动自定义输入框
+document.getElementById('projType')?.addEventListener('change', function() {
+  const customInput = document.getElementById('projTypeCustom');
+  if (customInput) customInput.style.display = this.value === '__custom__' ? 'block' : 'none';
+});
+
 function openProjectModal(id) {
   editingProjectId = id || null;
   document.getElementById('projectModalTitle').textContent = id ? '编辑项目' : '新建项目';
+  refreshProjTypeOptions();
+  const customInput = document.getElementById('projTypeCustom');
 
   if (id) {
     const p = (state.projects || []).find(x => x.id === id);
     if (!p) return;
     document.getElementById('projName').value = p.name || '';
     document.getElementById('projCode').value = p.code || '';
-    document.getElementById('projType').value = p.type || '旧改建筑';
+    // 检查项目类型是否在预设列表中
+    const sp = loadSettingsPrefs();
+    const types = sp.projectTypes || [];
+    if (p.type && types.includes(p.type)) {
+      document.getElementById('projType').value = p.type;
+      if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
+    } else if (p.type) {
+      // 不在预设中 → 选"自定义"并填入
+      document.getElementById('projType').value = '__custom__';
+      if (customInput) { customInput.style.display = 'block'; customInput.value = p.type; }
+    }
     const sd = splitDateTime(p.start);
     document.getElementById('projStartDate').value = sd.date;
     document.getElementById('projStartTime').value = sd.time;
@@ -505,7 +580,7 @@ function openProjectModal(id) {
   } else {
     document.getElementById('projName').value = '';
     document.getElementById('projCode').value = '';
-    document.getElementById('projType').value = '旧改建筑';
+    if (customInput) { customInput.style.display = 'none'; customInput.value = ''; }
     document.getElementById('projStartDate').value = '';
     document.getElementById('projStartTime').value = '';
     document.getElementById('projDueDate').value = '';
@@ -531,7 +606,7 @@ function renderProjTagSelect(selected) {
       <span class="pt-option ${selectedSet.has(t) ? 'active' : ''}" data-tag="${escapeHtml(t)}">
         <span class="pt-dot"></span>${escapeHtml(t)}
       </span>`).join('')
-    : '<span style="font-size:12px;color:var(--text-2)">暂无标签，可到 设置→自定义标签管理 中添加</span>');
+    : '<span style="font-size:12px;color:var(--text-2)">暂无标签</span>');
 
   // 收集当前已选（保存用）
   window.__projSelectedTags = Array.from(selectedSet);
@@ -563,10 +638,15 @@ projectModal.addEventListener('click', e => { if (e.target === projectModal) clo
 document.getElementById('projectSave').addEventListener('click', () => {
   const name = document.getElementById('projName').value.trim();
   if (!name) { showToast('请输入项目名称'); return; }
+  // 处理项目类型：如果是"自定义"则取输入框值
+  let projType = document.getElementById('projType').value;
+  if (projType === '__custom__') {
+    projType = (document.getElementById('projTypeCustom')?.value || '').trim();
+  }
   const data = {
     name,
     code: document.getElementById('projCode').value.trim(),
-    type: document.getElementById('projType').value,
+    type: projType,
     start: joinDateTime('projStartDate', 'projStartTime'),
     due: joinDateTime('projDueDate', 'projDueTime'),
     address: document.getElementById('projAddress').value.trim(),
@@ -697,10 +777,10 @@ function initCollapsible() {
 function renderCalendar() {
   calTitle.textContent = `${calYear}年 ${calMonth + 1}月`;
   calDays.innerHTML = '';
+  updateWeekdayHeaders();
 
   const firstDay = new Date(calYear, calMonth, 1);
-  let start = firstDay.getDay() - 1;
-  if (start < 0) start = 6;
+  let start = getCalStartCol(firstDay);
   const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
   const prevLastDate = new Date(calYear, calMonth, 0).getDate();
 
@@ -725,10 +805,8 @@ function renderCalendar() {
     }
   });
 
-  // 本周日期范围（周一到周日）
-  const todayIdx = today.getDay(); // 0=周日
-  const monOffset = todayIdx === 0 ? -6 : 1 - todayIdx;
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() + monOffset);
+  // 本周日期范围（根据周起始日设置）
+  const weekStart = new Date(today); weekStart.setDate(today.getDate() + getWeekOffset());
   const weekKeys = new Set();
   for (let i = 0; i < 7; i++) {
     const wd = new Date(weekStart); wd.setDate(weekStart.getDate() + i);
@@ -809,9 +887,7 @@ function renderCalendar() {
 function renderEvents(taskDays) {
   // 本周任务列表（按优先级排序）
   const today = new Date();
-  const todayIdx = today.getDay();
-  const monOffset = todayIdx === 0 ? -6 : 1 - todayIdx;
-  const weekStart = new Date(today); weekStart.setDate(today.getDate() + monOffset);
+  const weekStart = new Date(today); weekStart.setDate(today.getDate() + getWeekOffset());
 
   const weekTasks = [];
   for (let i = 0; i < 7; i++) {
@@ -869,8 +945,31 @@ document.getElementById('nextMonth').addEventListener('click', () => {
 // ---------- 项目页渲染 ----------
 const STATUS_LABEL = { active: '进行中', paused: '已暂停', done: '已完成' };
 
+// 按设置排序项目列表（总览横滑 + 项目页统一）
+function getSortedProjects(projects) {
+  const sp = loadSettingsPrefs();
+  const mode = sp.projectSort || 'due';
+  const arr = projects.slice();
+  if (mode === 'name') {
+    arr.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'zh'));
+  } else if (mode === 'created') {
+    // id 格式 'p<timestamp>'，提取数字部分比较，新建在前
+    arr.sort((a, b) => (parseInt(b.id.slice(1)) || 0) - (parseInt(a.id.slice(1)) || 0));
+  } else {
+    // due：按截止日期升序，无截止日期排末尾
+    arr.sort((a, b) => {
+      const va = a.due || '', vb = b.due || '';
+      if (!va && !vb) return 0;
+      if (!va) return 1;
+      if (!vb) return -1;
+      return va.localeCompare(vb);
+    });
+  }
+  return arr;
+}
+
 function renderProjects() {
-  const projects = state.projects || [];
+  const projects = getSortedProjects(state.projects || []);
   document.getElementById('projCount').textContent = projects.length;
 
   // 顶部汇总：总项目 / 进行中 / 已完成 / 已暂停
@@ -1008,7 +1107,7 @@ function renderOverview() {
     if (!state.profile) state.profile = defaultUserData().profile;
 
     const tasks = state.tasks;
-    const projects = state.projects;
+    const projects = getSortedProjects(state.projects);
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter(t => t.done).length;
 
@@ -1168,10 +1267,54 @@ document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.getElementById('historyBtn').addEventListener('click', () => {
   const done = state.tasks.filter(t => t.done).length;
   const total = state.tasks.length;
-  const evTotal = Object.values(state.events).reduce((a, b) => a + b.length, 0);
-  const projTotal = (state.projects || []).length;
-  showToast(`已完成 ${done}/${total} 任务 · ${projTotal} 个项目 · ${evTotal} 个日程`);
+  const rate = total ? Math.round(done / total * 100) : 0;
+  let emoji, msg, tip;
+  if (total === 0) {
+    emoji = '🌱';
+    msg = '万事开头难，先添加第一个任务吧';
+    tip = '从一个小目标开始，慢慢积累';
+  } else if (rate < 50) {
+    emoji = '🚀';
+    msg = '革命尚未成功，同志仍需努力';
+    tip = `当前已完成 ${rate}%，再坚持一下就能过半`;
+  } else if (rate < 80) {
+    emoji = '🌍';
+    msg = '你已超越银河人类50%，加油';
+    tip = `当前已完成 ${rate}%，朝着 80% 冲刺`;
+  } else if (rate < 100) {
+    emoji = '💪';
+    msg = '非常棒，你正在超越自己';
+    tip = `当前已完成 ${rate}%，离圆满只差一步`;
+  } else {
+    emoji = '✨';
+    msg = '恭喜，你已位列仙班';
+    tip = `${total} 个任务全部完成，今天的你真厉害`;
+  }
+  showMotivationModal(emoji, `已完成 ${done}/${total} 个任务（${rate}%）`, msg, tip);
 });
+
+// 温馨励志对话框
+function showMotivationModal(emoji, subtitle, msg, tip) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-mask show';
+  modal.innerHTML = `
+    <div class="modal glass motivation-modal">
+      <button class="modal-close" id="motivationClose">×</button>
+      <div class="motivation-emoji">${emoji}</div>
+      <div class="motivation-msg">${msg}</div>
+      <div class="motivation-sub">${subtitle}</div>
+      <div class="motivation-tip">${tip}</div>
+      <div class="modal-foot">
+        <button class="btn btn-primary" id="motivationOk" style="width:100%;">好，继续加油</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('appShell').appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#motivationClose').addEventListener('click', close);
+  modal.querySelector('#motivationOk').addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+}
 
 // ========== 登录/注册 ==========
 const authPage = document.getElementById('authPage');
@@ -1236,6 +1379,9 @@ function enterApp() {
   applyPrefs();
   refreshAvatar();
   initSidebar();
+  // 跳转到默认起始页
+  const sp = loadSettingsPrefs();
+  if (sp.defaultPage && sp.defaultPage !== 'overview') switchToTab(sp.defaultPage);
 }
 
 // PC 端侧边栏初始化（仅在宽屏下添加 Logo/快速创建/用户信息）
@@ -1392,13 +1538,46 @@ function renderSettingsStats() {
 
 // ========== 设置项偏好管理 ==========
 const DEFAULT_SETTINGS = {
-  workHourDecimals: '1',
-  workHourUnit: 'h',
   theme: 'dark',
   accent: '#3ddc97',
   fontSize: 'normal',
-  tags: ['勘测', '绘图', '客户对接', '材料采购', '施工']
+  tags: ['勘测', '绘图', '客户对接', '材料采购', '施工'],
+  weekStart: 'monday',          // monday | sunday
+  defaultPriority: 'mid',       // high | mid | low
+  doneTaskDisplay: 'bottom',    // strike(划线保留) | bottom(沉底) | hide(隐藏)
+  projectTypes: ['旧改建筑', '旧改场地', '室内空间改造', '别墅方案设计', '室内全案设计', '展厅方案设计'],
+  projectSort: 'due',           // due(截止日期) | created(创建时间) | name(名称)
+  defaultPage: 'overview'       // overview | tasks | projects | health
 };
+
+// 获取周起始日设置对应的偏移量（用于计算本周范围）
+function getWeekOffset() {
+  const sp = loadSettingsPrefs();
+  const today = new Date();
+  const todayIdx = today.getDay(); // 0=Sunday
+  if (sp.weekStart === 'sunday') return -todayIdx;                 // 周日为首日
+  return todayIdx === 0 ? -6 : 1 - todayIdx;                        // 周一为首日
+}
+
+// 获取日历首列偏移（当月1号是第几列，0-indexed）
+function getCalStartCol(firstDay) {
+  const sp = loadSettingsPrefs();
+  const d = firstDay.getDay(); // 0=Sunday
+  if (sp.weekStart === 'sunday') return d;       // 周日首列
+  return d === 0 ? 6 : d - 1;                    // 周一首列
+}
+
+// 更新日历星期表头
+function updateWeekdayHeaders() {
+  const sp = loadSettingsPrefs();
+  const el = document.getElementById('calWeekdays');
+  if (!el) return;
+  if (sp.weekStart === 'sunday') {
+    el.innerHTML = '<span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>';
+  } else {
+    el.innerHTML = '<span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>';
+  }
+}
 
 function loadSettingsPrefs() {
   try {
@@ -1407,25 +1586,31 @@ function loadSettingsPrefs() {
 }
 function saveSettingsPrefs() {
   const sp = loadSettingsPrefs();
-  // 收集UI值
-  const workHourDecimals = document.getElementById('workHourDecimals');
-  if (workHourDecimals) sp.workHourDecimals = workHourDecimals.value;
-  const workHourUnit = document.getElementById('workHourUnit');
-  if (workHourUnit) sp.workHourUnit = workHourUnit.value;
+  const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
+  // 收集所有设置项
+  const v = getVal('setWeekStart'); if (v !== undefined) sp.weekStart = v;
+  const v2 = getVal('setDefaultPriority'); if (v2 !== undefined) sp.defaultPriority = v2;
+  const v3 = getVal('setDoneTaskDisplay'); if (v3 !== undefined) sp.doneTaskDisplay = v3;
+  const v4 = getVal('setProjectSort'); if (v4 !== undefined) sp.projectSort = v4;
+  const v5 = getVal('setDefaultPage'); if (v5 !== undefined) sp.defaultPage = v5;
   localStorage.setItem(SETTINGS_PREFS_KEY, JSON.stringify(sp));
   applySettingsToUI(sp);
 }
 
 function loadSettingsPrefsToUI() {
   const sp = loadSettingsPrefs();
-  const setCheck = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
   const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-
-  setVal('workHourDecimals', sp.workHourDecimals);
-  setVal('workHourUnit', sp.workHourUnit);
+  setVal('setWeekStart', sp.weekStart);
+  setVal('setDefaultPriority', sp.defaultPriority);
+  setVal('setDoneTaskDisplay', sp.doneTaskDisplay);
+  setVal('setProjectSort', sp.projectSort);
+  setVal('setDefaultPage', sp.defaultPage);
   // 标签数量
   const tc = document.getElementById('tagCountHint');
   if (tc) tc.textContent = (sp.tags || []).length + ' 个标签';
+  // 项目类型数量
+  const ptHint = document.getElementById('projTypeCountHint');
+  if (ptHint) ptHint.textContent = (sp.projectTypes || []).length + ' 个类型';
   // 主题和强调色
   applySettingsToUI(sp);
 }
@@ -1501,7 +1686,82 @@ document.getElementById('pwdSave').addEventListener('click', () => {
   showToast('密码已修改');
 });
 
-// 自定义标签管理
+// ========== 项目类型预设管理 ==========
+let projTypeModal = null;
+document.getElementById('rowProjTypeManage')?.addEventListener('click', () => {
+  const sp = loadSettingsPrefs();
+  const types = sp.projectTypes || [];
+  if (!projTypeModal) {
+    projTypeModal = document.createElement('div');
+    projTypeModal.className = 'modal-mask';
+    projTypeModal.innerHTML = `
+      <div class="modal glass">
+        <div class="modal-head"><h3>项目类型预设</h3><button class="modal-close" id="projTypeClose">×</button></div>
+        <div class="modal-body">
+          <div class="tag-list" id="projTypeList"></div>
+          <div class="tag-add-row">
+            <input type="text" id="newProjTypeInput" placeholder="输入新类型名称" maxlength="20">
+            <button id="addProjTypeBtn">添加</button>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-ghost" id="projTypeDone">完成</button>
+        </div>
+      </div>`;
+    document.getElementById('appShell').appendChild(projTypeModal);
+    projTypeModal.addEventListener('click', e => { if (e.target === projTypeModal) projTypeModal.classList.remove('show'); });
+    document.getElementById('projTypeClose').addEventListener('click', () => projTypeModal.classList.remove('show'));
+    document.getElementById('projTypeDone').addEventListener('click', () => projTypeModal.classList.remove('show'));
+  }
+
+  const renderTypes = () => {
+    const sp2 = loadSettingsPrefs();
+    const types2 = sp2.projectTypes || [];
+    const list = projTypeModal.querySelector('#projTypeList');
+    list.innerHTML = types2.map((t, i) => `
+      <span class="tag-chip">${escapeHtml(t)}<span class="tag-del" data-idx="${i}">×</span></span>
+    `).join('');
+    list.querySelectorAll('.tag-del').forEach(del => {
+      del.addEventListener('click', () => {
+        const idx = parseInt(del.dataset.idx);
+        const sp3 = loadSettingsPrefs();
+        sp3.projectTypes.splice(idx, 1);
+        localStorage.setItem(SETTINGS_PREFS_KEY, JSON.stringify(sp3));
+        renderTypes();
+        const hint = document.getElementById('projTypeCountHint');
+        if (hint) hint.textContent = sp3.projectTypes.length + ' 个类型';
+      });
+    });
+  };
+
+  const addBtn = projTypeModal.querySelector('#addProjTypeBtn');
+  const newInput = projTypeModal.querySelector('#newProjTypeInput');
+  const addHandler = () => {
+    const name = newInput.value.trim();
+    if (!name) { showToast('请输入类型名称'); return; }
+    const sp2 = loadSettingsPrefs();
+    if (!sp2.projectTypes) sp2.projectTypes = [];
+    if (sp2.projectTypes.includes(name)) { showToast('类型已存在'); return; }
+    sp2.projectTypes.push(name);
+    localStorage.setItem(SETTINGS_PREFS_KEY, JSON.stringify(sp2));
+    newInput.value = '';
+    renderTypes();
+    const hint = document.getElementById('projTypeCountHint');
+    if (hint) hint.textContent = sp2.projectTypes.length + ' 个类型';
+  };
+  const newAddBtn = addBtn.cloneNode(true);
+  addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+  newAddBtn.addEventListener('click', addHandler);
+  const newInput2 = newInput.cloneNode(true);
+  newInput.parentNode.replaceChild(newInput2, newInput);
+  newInput2.addEventListener('keydown', e => { if (e.key === 'Enter') addHandler(); });
+
+  renderTypes();
+  projTypeModal.querySelector('#newProjTypeInput').value = '';
+  projTypeModal.classList.add('show');
+});
+
+// ========== 自定义标签管理 ==========
 let tagManageModal = null;
 document.getElementById('rowTagManage')?.addEventListener('click', () => {
   const sp = loadSettingsPrefs();
@@ -1510,7 +1770,7 @@ document.getElementById('rowTagManage')?.addEventListener('click', () => {
     tagManageModal = document.createElement('div');
     tagManageModal.className = 'modal-mask';
     tagManageModal.innerHTML = `
-      <div class="modal glass tag-manage-modal">
+      <div class="modal glass">
         <div class="modal-head"><h3>自定义标签管理</h3><button class="modal-close" id="tagModalClose">×</button></div>
         <div class="modal-body">
           <div class="tag-list" id="tagList"></div>
@@ -1522,8 +1782,7 @@ document.getElementById('rowTagManage')?.addEventListener('click', () => {
         <div class="modal-foot">
           <button class="btn btn-ghost" id="tagModalDone">完成</button>
         </div>
-      </div>
-    `;
+      </div>`;
     document.getElementById('appShell').appendChild(tagManageModal);
     tagManageModal.addEventListener('click', e => { if (e.target === tagManageModal) tagManageModal.classList.remove('show'); });
     document.getElementById('tagModalClose').addEventListener('click', () => tagManageModal.classList.remove('show'));
@@ -1564,7 +1823,6 @@ document.getElementById('rowTagManage')?.addEventListener('click', () => {
     const tc = document.getElementById('tagCountHint');
     if (tc) tc.textContent = sp2.tags.length + ' 个标签';
   };
-  // 移除旧监听器
   const newAddBtn = addBtn.cloneNode(true);
   addBtn.parentNode.replaceChild(newAddBtn, addBtn);
   newAddBtn.addEventListener('click', addHandler);
@@ -1658,8 +1916,8 @@ document.getElementById('rowBatchDelete')?.addEventListener('click', () => {
   });
 });
 
-// 全部导出备份
-document.getElementById('rowExportAll')?.addEventListener('click', () => {
+// 全部导出备份（设置中心行 + 顶栏【本地备份】按钮共用）
+function exportBackup() {
   const sp = loadSettingsPrefs();
   const data = JSON.stringify({
     user: currentUser,
@@ -1676,7 +1934,35 @@ document.getElementById('rowExportAll')?.addEventListener('click', () => {
   a.click();
   URL.revokeObjectURL(url);
   showToast('已导出完整备份文件 ✓');
-});
+}
+// 触发备份文件导入（设置中心行 + 顶栏【导入备份】按钮共用）
+function triggerImportBackup() {
+  const imp = document.getElementById('importFile');
+  if (imp) imp.click();
+}
+
+document.getElementById('rowExportAll')?.addEventListener('click', exportBackup);
+document.getElementById('backupBtn').addEventListener('click', exportBackup);
+document.getElementById('importBackupBtn').addEventListener('click', triggerImportBackup);
+
+// 数据达到 30 条时温和提示备份（每个账号只提示一次，用 localStorage 标记）
+function maybeWarnBackup() {
+  if (!currentUser) return;
+  try {
+    const tasks = (state.tasks || []).length;
+    const projects = (state.projects || []).length;
+    const events = Object.values(state.events || {}).reduce((a, b) => a + b.length, 0);
+    const healthLogs = (state.health?.sport?.logs || []).length
+      + (state.health?.weight?.logs || []).length
+      + (state.health?.camping?.logs || []).length;
+    const total = tasks + projects + events + healthLogs;
+    if (total < 30) return;
+    const key = 'workbench_backup_warned_' + currentUser;
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, '1');
+    showToast('📦 数据已积累 ' + total + ' 条，建议点击左上 ↓ 图标做个本地备份');
+  } catch (e) {}
+}
 
 // 导入文件（保留原逻辑，绑定到导入 input）
 document.getElementById('importFile').addEventListener('change', e => {
@@ -1700,6 +1986,46 @@ document.getElementById('importFile').addEventListener('change', e => {
   };
   reader.readAsText(file);
   e.target.value = '';
+});
+
+// 清空示例数据（确认后清空任务/项目/日程/健康数据，保留账号与外观设置）
+document.getElementById('rowClearSample')?.addEventListener('click', () => {
+  const modal = document.createElement('div');
+  modal.className = 'modal-mask show';
+  modal.innerHTML = `
+    <div class="modal glass">
+      <div class="modal-head"><h3>清空示例数据</h3><button class="modal-close" id="clearSampleClose">×</button></div>
+      <div class="modal-body">
+        <p style="color:var(--text-1);line-height:1.7;margin:0;">此操作将清空当前账号下的全部任务、项目、日程、健康记录数据，<br>恢复为空白状态（登录账号与外观设置保留）。<br><span style="color:var(--danger)">该操作不可撤销！</span><br>如需保留，请先点击「全部数据本地备份导出」。</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="clearSampleCancel">取消</button>
+        <button class="btn btn-primary" id="clearSampleConfirm" style="background:var(--danger)">确认清空</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('appShell').appendChild(modal);
+  const close = () => modal.remove();
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  modal.querySelector('#clearSampleClose').addEventListener('click', close);
+  modal.querySelector('#clearSampleCancel').addEventListener('click', close);
+  modal.querySelector('#clearSampleConfirm').addEventListener('click', () => {
+    const fresh = defaultUserData();
+    // 保留 profile（头像/昵称）与偏好设置，清空业务数据
+    state.tasks = [];
+    state.projects = [];
+    state.events = {};
+    state.selectedDate = null;
+    state.health = fresh.health;
+    saveState();
+    close();
+    renderTasks();
+    initCalendar();
+    renderProjects();
+    renderOverview();
+    renderSettingsStats();
+    showToast('已清空示例数据 ✓');
+  });
 });
 
 // 迁移旧偏好
@@ -2624,11 +2950,9 @@ function renderHealthDashboard() {
   const weight = state.health.weight || { plan: {}, logs: [] };
   const habits = state.health.habits || [];
 
-  // 本周（周一~周日）为完整一周，作为运动计时统计范围
+  // 本周（根据周起始日设置）为完整一周，作为运动计时统计范围
   const weekStartDate = new Date();
-  const dow = weekStartDate.getDay();
-  const monOffset = dow === 0 ? -6 : 1 - dow;
-  weekStartDate.setDate(weekStartDate.getDate() + monOffset);
+  weekStartDate.setDate(weekStartDate.getDate() + getWeekOffset());
   const weekDays = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStartDate); d.setDate(weekStartDate.getDate() + i);
