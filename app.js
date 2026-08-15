@@ -3171,14 +3171,9 @@ function renderHealthDashboard() {
 
     let weightPath = '';
     let firstWeight = true;
-    // 前向填充：没记录的日期沿用上一次体重，保持连线不断
-    let lastW = null;
-    const weightDataFilled = weightData.map(v => {
-      if (v !== null) { lastW = v; return v; }
-      return lastW;
-    });
-    weightDataFilled.forEach((v, i) => {
-      if (v === null) return; // 首条记录之前无数据，不画线
+    // 只在有记录的日期间直接连线，跳过空缺日期（不填充值）
+    weightData.forEach((v, i) => {
+      if (v === null) return;
       const cmd = firstWeight ? 'M' : 'L';
       firstWeight = false;
       weightPath += `${cmd}${x(i)},${weightScale(v)} `;
