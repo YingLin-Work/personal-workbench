@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>假期旅游助手</title>
+<script src="https://map.qq.com/api/gljs?v=1&key=KHYBZ-3HXK6-KZRS2-ML4UZ-SIZNO-HCFS4"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f6f9fc;--surface:#fff;--text:#1a1f36;--text-2:#425466;--muted:#697386;
+  --border:#e3e8ee;--shadow:0 4px 12px rgba(0,0,0,.05);--shadow-lg:0 10px 40px rgba(0,0,0,.08);
+  --r:14px;--r-s:8px;
+  --c-scenic:#635BFF;--c-food:#FF6B6B;--c-culture:#00B8A9;--c-shopping:#F59E0B;--c-transport:#3B82F6;
+  --c-best:#635BFF;--c-earth:#10B981;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+
+/* ===== Banner ===== */
+.banner{
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 0%,rgba(99,91,255,.14),transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 0%,rgba(0,184,169,.11),transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 100%,rgba(16,185,129,.06),transparent 60%),
+    linear-gradient(180deg,#fff 0%,#f9fbfd 100%);
+  border-bottom:1px solid var(--border);padding:34px 48px 26px;
+}
+.banner-inner{max-width:1400px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.banner h1{font-size:36px;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#1a1f36 0%,#635BFF 60%,#10B981 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.15}
+.banner .sub{font-size:15px;color:var(--muted);margin-top:6px;font-weight:500}
+.badges{display:flex;gap:10px;flex-shrink:0}
+.badge{padding:8px 16px;border-radius:100px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;transition:transform .2s}
+.badge:hover{transform:translateY(-2px)}
+.badge-days{background:rgba(99,91,255,.1);color:#635BFF;border-color:rgba(99,91,255,.15)}
+.badge-pois{background:rgba(0,184,169,.1);color:#00B8A9;border-color:rgba(0,184,169,.15)}
+.badge-budget{background:rgba(255,107,107,.1);color:#FF6B6B;border-color:rgba(255,107,107,.15)}
+.badge-multi{background:rgba(16,185,129,.1);color:#10B981;border-color:rgba(16,185,129,.15)}
+
+/* ===== 选择面板 ===== */
+.picker{padding:20px 48px 8px}
+.picker-inner{max-width:1400px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 24px}
+.picker-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.picker-row:last-of-type{margin-bottom:0}
+.picker-row-label{display:flex;align-items:center;gap:8px}
+.picker-row-label h2{font-size:15px;font-weight:700;color:var(--text)}
+.need{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#FF6B6B;color:#fff;font-size:10px;font-weight:800}
+.picker-optional{font-size:11px;color:#10B981;font-weight:700}
+.picker-hint{font-size:11px;color:var(--muted);font-weight:500;margin-left:auto}
+.fields{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.field-input-wrap{position:relative;flex:1;min-width:180px;max-width:250px}
+.field-input{width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:#f8fafc;outline:none;transition:all .2s;font-family:inherit}
+.field-input:focus{border-color:var(--c-best);background:#fff;box-shadow:0 0 0 3px rgba(99,91,255,.12)}
+.field-input::placeholder{color:#a0a7b5}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 18px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#635BFF,#7C3AED);color:#fff;box-shadow:0 4px 12px rgba(99,91,255,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(99,91,255,.4)}
+.btn-confirm{background:linear-gradient(135deg,#10B981,#059669);color:#fff;box-shadow:0 4px 12px rgba(16,185,129,.3)}
+.btn-confirm:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(16,185,129,.4)}
+.add-btn{background:rgba(16,185,129,.1);color:#10B981;border:1px solid rgba(16,185,129,.25)}
+.add-btn:hover{background:rgba(16,185,129,.18)}
+.add-btn:disabled{opacity:.4;cursor:not-allowed}
+.chips{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chips-label{font-size:12px;color:var(--muted);font-weight:600}
+.days-row{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.days-label{font-size:13px;font-weight:700;color:var(--text)}
+.days-input{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:#fff;outline:none;cursor:pointer;font-family:inherit}
+.days-input:focus{border-color:var(--c-best);box-shadow:0 0 0 3px rgba(99,91,255,.12)}
+.days-hint{font-size:11px;color:var(--muted)}
+.chip{padding:4px 12px;border-radius:100px;font-size:12px;font-weight:600;background:#f0f3f7;color:var(--text-2);border:none;cursor:pointer;transition:all .2s}
+.chip:hover{background:rgba(99,91,255,.12);color:var(--c-best)}
+.chip.recommend{position:relative}
+.chip.recommend::after{content:"推荐";position:absolute;top:-8px;right:-6px;font-size:9px;font-weight:800;background:linear-gradient(135deg,#10B981,#0EA5E9);color:#fff;padding:1px 6px;border-radius:100px}
+
+/* ===== 推荐结果 ===== */
+.result{padding:16px 48px}
+.result-inner{max-width:1400px;margin:0 auto;background:linear-gradient(135deg,rgba(99,91,255,.06),rgba(16,185,129,.05));border:1px solid rgba(99,91,255,.15);border-radius:var(--r);padding:20px 24px}
+.result-hd{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.result-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:linear-gradient(135deg,#635BFF,#7C3AED);color:#fff;border-radius:100px;font-size:13px;font-weight:700}
+.result-title{font-size:20px;font-weight:800;color:var(--text)}
+.result-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.result-metrics{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.rm{display:flex;flex-direction:column;padding:10px 18px;background:rgba(255,255,255,.8);border-radius:10px;border:1px solid rgba(99,91,255,.12)}
+.rm b{font-size:20px;color:var(--text);font-weight:800}
+.rm span{font-size:11px;color:var(--muted);font-weight:600}
+.hidden{display:none!important}
+
+/* ===== 对比表格 ===== */
+.compare{padding:16px 48px 0}
+.compare-inner{max-width:1400px;margin:0 auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.cmp-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;transition:background .2s}
+.cmp-hd:hover{background:#f8fafc}
+.cmp-title{font-size:16px;font-weight:700;color:var(--text)}
+.cmp-arrow{font-size:12px;color:var(--muted);font-weight:600;transition:transform .2s}
+.cmp-body{overflow:hidden;transition:max-height .3s ease}
+.cmp-body.collapsed{max-height:0}
+.cmp-body .cmp-inner{padding:0 8px 8px}
+table{width:100%;border-collapse:separate;border-spacing:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+th,td{padding:13px 16px;font-size:14px;text-align:left;border-bottom:1px solid var(--border)}
+th{background:#f8fafc;color:var(--muted);font-weight:700;font-size:12px;letter-spacing:.3px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafcff}
+tbody tr.best-row{background:rgba(99,91,255,.05)}
+.best-tag{display:inline-block;padding:2px 10px;border-radius:100px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#635BFF,#7C3AED);color:#fff;margin-left:6px}
+.score-bar{width:70px;height:8px;background:#eef1f6;border-radius:99px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:8px}
+.score-fill{height:100%;background:linear-gradient(90deg,#635BFF,#7C3AED);border-radius:99px}
+.green{color:#10B981;font-weight:700}
+.red{color:#FF6B6B;font-weight:700}
+
+/* ===== 主内容区 ===== */
+.main{display:flex;gap:20px;padding:20px 48px 32px;max-width:1400px;margin:0 auto;height:calc(100vh - 150px);min-height:500px}
+.tl-panel{width:46%;max-width:600px;overflow-y:auto;padding-right:4px}
+.tl-panel::-webkit-scrollbar{width:6px}
+.tl-panel::-webkit-scrollbar-track{background:transparent}
+.tl-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.day-hdr{margin-bottom:16px}
+.day-hdr h2{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.day-hdr .theme{font-size:14px;color:var(--muted);margin-top:2px}
+.day-budget{display:inline-block;margin-top:8px;padding:4px 14px;background:rgba(99,91,255,.08);color:#635BFF;border-radius:100px;font-size:13px;font-weight:700}
+.legend{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:600}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tl-list{display:flex;flex-direction:column;gap:12px;position:relative}
+
+/* ===== DAY 分段头 ===== */
+.seg-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(135deg,rgba(99,91,255,.08),rgba(16,185,129,.05));border:1px solid rgba(99,91,255,.15);border-radius:10px;margin-bottom:2px}
+.seg-day{font-size:14px;font-weight:800;color:#635BFF;letter-spacing:.5px}
+.seg-meta{font-size:11px;color:var(--muted);font-weight:600}
+
+/* ===== Card ===== */
+.card{display:flex;gap:14px;padding:15px 16px 15px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--cc) 3%,#fff),#fff 50%);border:1px solid var(--border);border-left:3px solid var(--cc);border-radius:var(--r);cursor:pointer;transition:all .22s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;animation:slideIn .35s ease-out forwards;opacity:0;box-shadow:var(--shadow)}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card::after{content:"";position:absolute;inset:0;background:radial-gradient(140% 120% at 0% 0%,color-mix(in srgb,var(--cc) 8%,transparent),transparent 55%);opacity:0;transition:opacity .22s;pointer-events:none}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 26px -6px color-mix(in srgb,var(--cc) 30%,rgba(0,0,0,.12)),0 10px 30px rgba(0,0,0,.06)}
+.card:hover::after{opacity:1}
+.card:active{transform:translateY(0) scale(.995)}
+.card.active{box-shadow:0 0 0 2px color-mix(in srgb,var(--cc) 55%,transparent),0 12px 28px -6px color-mix(in srgb,var(--cc) 35%,rgba(0,0,0,.15));transform:translateY(-1px)}
+.card.free-day{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--cc) 4%,#fff),color-mix(in srgb,var(--cc) 4%,#fff) 8px,rgba(0,0,0,.008) 8px,rgba(0,0,0,.008) 16px);border-left-color:#c4cbd6;cursor:default}
+.card.free-day:hover{transform:none;box-shadow:var(--shadow)}
+.card.free-day .goto{display:none}
+.card .goto{position:absolute;top:12px;right:12px;font-size:10px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:100px;background:rgba(0,0,0,.03);opacity:0;transform:translateX(4px);transition:all .2s}
+.card:hover .goto{opacity:1;transform:translateX(0);color:var(--cc)}
+.card-l{flex-shrink:0;display:flex;flex-direction:column;align-items:center;width:62px;padding-top:2px}
+.t-badge{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:.3px}
+.t-sub{font-size:9px;color:var(--muted);font-weight:600;margin-top:1px}
+.t-dot{width:13px;height:13px;border-radius:50%;background:var(--cc);border:3px solid #fff;box-shadow:0 0 0 2px var(--cc),0 1px 4px rgba(0,0,0,.15);margin-top:8px;flex-shrink:0}
+.card-l::before{content:"";width:2px;flex:1;min-height:14px;margin-top:6px;background:linear-gradient(180deg,color-mix(in srgb,var(--cc) 35%,transparent),transparent);border-radius:1px}
+.card-m{flex:1;min-width:0}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.cat-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 11px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.3px;border:1px solid color-mix(in srgb,var(--cc) 22%,transparent)}
+.seq-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:8px;background:linear-gradient(135deg,var(--cc),color-mix(in srgb,var(--cc) 60%,#000));color:#fff;font-size:12px;font-weight:800;flex-shrink:0;box-shadow:0 2px 6px -1px color-mix(in srgb,var(--cc) 60%,transparent)}
+.p-name{font-size:16px;font-weight:800;color:var(--text);letter-spacing:-.2px}
+.p-desc{font-size:13px;color:var(--text-2);line-height:1.55;margin-bottom:9px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.transit-line{display:inline-flex;align-items:center;gap:6px;margin-bottom:7px;padding:4px 11px;background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(59,130,246,.03));border:1px solid rgba(59,130,246,.14);border-radius:100px;font-size:11px;color:#2563EB;font-weight:600}
+.card-bot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.chip-line{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:100px;background:rgba(0,0,0,.03);font-size:11px;color:var(--text-2);font-weight:600}
+.chip-line .ico{opacity:.75}
+.chip-line.budget{background:color-mix(in srgb,var(--cc) 9%,transparent);color:var(--cc)}
+.meta{font-size:12px;color:var(--muted);font-weight:500}
+.meta-b{color:var(--text);font-weight:700}
+.day-total{margin-top:4px;padding:12px 16px;background:linear-gradient(135deg,rgba(99,91,255,.06),rgba(16,185,129,.04));border:1px solid rgba(99,91,255,.12);border-radius:var(--r);display:flex;justify-content:space-between;align-items:center}
+.day-total span{font-size:13px;color:var(--muted);font-weight:600}
+.day-total b{font-size:18px;color:#635BFF;font-weight:800}
+
+/* ===== Map ===== */
+.map-wrap{flex:1;min-width:400px;position:relative;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow-lg);border:1px solid var(--border);background:#e8ecf1}
+#map{width:100%;height:100%}
+.map-legend{position:absolute;top:14px;left:14px;background:rgba(255,255,255,.95);backdrop-filter:blur(10px);padding:8px 12px;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,.08);z-index:10;display:flex;gap:12px;flex-wrap:wrap}
+.map-legend .legend-item{font-size:11px}
+.map-tip{position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);padding:6px 12px;border-radius:8px;font-size:11px;color:var(--muted);z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+/* ===== 折中概览地图 ===== */
+.ov-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.ov-title{font-size:15px;font-weight:800;color:var(--text)}
+.ov-cap{font-size:12px;color:var(--muted);font-weight:500}
+.ov-map{width:100%;height:340px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border);background:#e8ecf1;position:relative}
+.ov-legend{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);padding:6px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:10;display:flex;gap:12px;flex-wrap:wrap;font-size:11px}
+.ov-legend .legend-item{font-size:11px}
+
+/* ===== 候选目的地 ===== */
+.cand-wrap{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+.cand-label{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px}
+.cand-list{display:flex;gap:12px;flex-wrap:wrap}
+.cand{flex:1;min-width:180px;max-width:260px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;text-align:left;font-family:inherit}
+.cand:hover{border-color:rgba(99,91,255,.4);transform:translateY(-1px);box-shadow:var(--shadow)}
+.cand.active{border-color:#635BFF;box-shadow:0 0 0 2px rgba(99,91,255,.18);background:rgba(99,91,255,.04)}
+.cand span{display:block}
+.cand .cand-name{font-size:15px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:6px}
+.cand .cand-theme{font-size:11px;color:var(--muted);margin-top:2px}
+.cand .cand-meta{font-size:11px;color:var(--text-2);margin-top:6px;font-weight:600}
+.cand .cand-tag{display:inline-block;padding:1px 8px;border-radius:100px;font-size:10px;font-weight:800;background:linear-gradient(135deg,#635BFF,#7C3AED);color:#fff;margin-left:auto}
+
+/* ===== Footer ===== */
+.footer{padding:20px 48px;text-align:center;font-size:12px;color:var(--muted);max-width:1400px;margin:0 auto}
+
+/* ===== Responsive ===== */
+@media(max-width:900px){
+  .banner{padding:24px 20px}.banner h1{font-size:24px}
+  .picker{padding:16px 20px}.result{padding:12px 20px}.compare{padding:12px 20px}
+  .main{flex-direction:column;padding:16px 20px;height:auto}
+  .tl-panel{width:100%;max-width:none;max-height:450px}
+  .map-wrap{min-width:0;height:400px}
+  .field-input-wrap{min-width:150px;max-width:100%;flex:1 1 100%}
+  .picker-hint{display:none}
+  th,td{padding:10px 10px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<header class="banner">
+  <div class="banner-inner">
+    <div>
+      <h1>假期旅游助手</h1>
+      <p class="sub">输入出发城市与目的地，按实际高铁里程推荐最折中的旅行方案</p>
+    </div>
+    <div class="badges">
+      <span class="badge badge-multi">多目的地</span>
+      <span class="badge badge-days">每日行程</span>
+      <span class="badge badge-pois">腾讯地图</span>
+      <span class="badge badge-budget">预算估算</span>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 出发城市选择 ===== -->
+<section class="picker">
+  <div class="picker-inner">
+    <div class="picker-row">
+      <div class="picker-row-label">
+        <h2>🚄 出发城市</h2><span class="need">1</span>
+        <span class="picker-hint">支持多个出发城市，系统将找"到大家高铁里程都差不多"的目的地</span>
+      </div>
+      <div class="fields" id="origin-fields">
+        <div class="field-input-wrap">
+          <input type="text" class="field-input origin-input" placeholder="输入出发城市，如：上海" maxlength="8">
+        </div>
+        <button class="btn add-btn" id="add-origin">＋ 添加</button>
+      </div>
+      <div class="chips">
+        <span class="chips-label">常用：</span>
+        <button class="chip" data-val="上海" data-kind="origin">上海</button>
+        <button class="chip" data-val="杭州" data-kind="origin">杭州</button>
+        <button class="chip" data-val="苏州" data-kind="origin">苏州</button>
+        <button class="chip" data-val="南京" data-kind="origin">南京</button>
+        <button class="chip" data-val="北京" data-kind="origin">北京</button>
+        <button class="chip" data-val="郑州" data-kind="origin">郑州</button>
+        <button class="chip" data-val="合肥" data-kind="origin">合肥</button>
+        <button class="chip" data-val="无锡" data-kind="origin">无锡</button>
+        <button class="chip" data-val="武汉" data-kind="origin">武汉</button>
+      </div>
+      <!-- 预计出行天数 -->
+      <div class="days-row">
+        <span class="days-label">📅 预计出行天数</span>
+        <select class="days-input" id="days-input">
+          <option value="1">1 天</option>
+          <option value="2">2 天</option>
+          <option value="3" selected>3 天</option>
+          <option value="4">4 天</option>
+          <option value="5">5 天</option>
+        </select>
+        <span class="days-hint">行程将按天数自动拆分为 DAY1 / DAY2 …</span>
+      </div>
+    </div>
+
+    <div class="picker-row" style="border-top:1px dashed var(--border);padding-top:14px">
+      <div class="picker-row-label">
+        <h2>📍 目的地城市</h2><span class="need">1</span>
+        <span class="picker-optional">可选多个，或留空自动折中推荐</span>
+        <span class="picker-hint">自动推荐"到各出发点实际高铁里程都差不多"的城市，均衡折中</span>
+      </div>
+      <div class="fields" id="dest-fields">
+        <div class="field-input-wrap">
+          <input type="text" class="field-input dest-input" placeholder="输入目的地，如：嘉兴 / 苏州" maxlength="8">
+        </div>
+        <button class="btn add-btn" id="add-dest">＋ 添加</button>
+        <button class="btn btn-confirm" id="confirm-dest" style="margin-left:4px">✓ 确认生成攻略</button>
+        <button class="btn btn-primary" id="calc-btn" style="margin-left:4px">💡 智能折中推荐</button>
+      </div>
+      <div class="chips">
+        <span class="chips-label">热门目的地：</span>
+        <button class="chip" data-val="嘉兴" data-kind="dest">嘉兴</button>
+        <button class="chip" data-val="苏州" data-kind="dest">苏州</button>
+        <button class="chip" data-val="杭州" data-kind="dest">杭州</button>
+        <button class="chip" data-val="南京" data-kind="dest">南京</button>
+        <button class="chip" data-val="上海" data-kind="dest">上海</button>
+        <button class="chip" data-val="无锡" data-kind="dest">无锡</button>
+        <button class="chip" data-val="西安" data-kind="dest">西安</button>
+        <button class="chip" data-val="成都" data-kind="dest">成都</button>
+        <button class="chip" data-val="北京" data-kind="dest">北京</button>
+        <button class="chip" data-val="宁波" data-kind="dest">宁波</button>
+        <button class="chip" data-val="扬州" data-kind="dest">扬州</button>
+        <button class="chip" data-val="乌镇" data-kind="dest">乌镇</button>
+        <button class="chip" data-val="西塘" data-kind="dest">西塘</button>
+        <button class="chip" data-val="威海" data-kind="dest">威海</button>
+        <button class="chip" data-val="兰州" data-kind="dest">兰州</button>
+        <button class="chip" data-val="敦煌" data-kind="dest">敦煌</button>
+        <button class="chip" data-val="香格里拉" data-kind="dest">香格里拉</button>
+        <button class="chip" data-val="凤凰" data-kind="dest">凤凰</button>
+        <button class="chip" data-val="恩施" data-kind="dest">恩施</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 推荐结果 ===== -->
+<section class="result hidden" id="result-section">
+  <div class="result-inner">
+    <div class="result-hd">
+      <span class="result-badge" id="result-badge">✨ 推荐方案</span>
+      <div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
+    </div>
+    <div class="result-metrics" id="result-metrics"></div>
+    <!-- 候选目的地（2-3个备选，可点击切换） -->
+    <div class="cand-wrap" id="cand-wrap">
+      <div class="cand-label">🎯 备选目的地（点击切换查看行程与地图）</div>
+      <div class="cand-list" id="cand-list"></div>
+    </div>
+  </div>
+  <!-- 折中概览地图：各出发点 + 推荐目的地 连线 -->
+  <div class="result-inner" id="overview-map-wrap" style="margin-top:12px">
+    <div class="ov-hd">
+      <span class="ov-title">🗺️ 折中概览</span>
+      <span class="ov-cap" id="overview-cap">各出发点 ←→ 推荐目的地的连线</span>
+    </div>
+    <div class="ov-map" id="overview-map"></div>
+  </div>
+</section>
+
+<!-- ===== 对比表格 ===== -->
+<section class="compare hidden" id="compare-section">
+  <div class="compare-inner">
+    <div class="cmp-hd" id="cmp-toggle" role="button">
+      <span class="cmp-title">📊 方案对比</span>
+      <span class="cmp-arrow" id="cmp-arrow">▾ 收起</span>
+    </div>
+    <div class="cmp-body collapsed" id="cmp-body">
+      <table>
+        <thead>
+          <tr>
+            <th>目的地</th>
+            <th>各出发点里程(单程)</th>
+            <th>平均高铁里程</th>
+            <th>平均高铁耗时</th>
+            <th>距离均衡综合分</th>
+          </tr>
+        </thead>
+        <tbody id="compare-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<main class="main">
+  <aside class="tl-panel">
+    <div class="day-hdr" id="day-hdr"></div>
+    <div class="legend" id="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#635BFF"></span>景点</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#FF6B6B"></span>美食</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#00B8A9"></span>文化</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>购物</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span>交通</div>
+    </div>
+    <div class="tl-list" id="tl-list"></div>
+    <div class="day-total" id="day-total"></div>
+  </aside>
+  <section class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#635BFF"></span>景点</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#FF6B6B"></span>美食</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#00B8A9"></span>文化</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>购物</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span>交通</div>
+    </div>
+    <div class="map-tip">点击左侧卡片可飞至对应位置</div>
+  </section>
+</main>
+
+<div class="footer">行程数据由腾讯地图提供 · 高铁票价参考12306/携程实时数据 · 坐标系 GCJ-02 · 仅供行程参考</div>
+
+<script>
+/* ============================================================
+   核心数据
+   ============================================================ */
+
+/* 类别配色 */
+var cats = {
+  scenic:{name:"景点",color:"#635BFF",bg:"rgba(99,91,255,.1)"},
+  food:{name:"美食",color:"#FF6B6B",bg:"rgba(255,107,107,.1)"},
+  culture:{name:"文化",color:"#00B8A9",bg:"rgba(0,184,169,.1)"},
+  shopping:{name:"购物",color:"#F59E0B",bg:"rgba(245,158,11,.1)"},
+  transport:{name:"交通",color:"#3B82F6",bg:"rgba(59,130,246,.1)"}
+};
+
+/* 目的地 POI 行程库（简化版核心行程）
+   key = 目的地城市名，pois 为一日游核心行程 */
+var destPOIs = {
+  "苏州": {
+    theme:"江南园林 · 古镇水乡",
+    pois:[
+      {time:"09:00",name:"苏州站",cat:"transport",lat:31.329503,lng:120.610815,addr:"姑苏区苏站路27号",budget:0,dur:"到达",transit:"高铁到达,地铁/公交前往拙政园"},
+      {time:"09:45",name:"拙政园",cat:"scenic",lat:31.324178,lng:120.628761,addr:"姑苏区东北街178号",budget:80,dur:"2h",desc:"中国四大名园之首，江南园林典范。亭台楼阁、回廊曲折、假山池沼，移步换景的经典之作。"},
+      {time:"12:00",name:"平江路",cat:"food",lat:31.314122,lng:120.633761,addr:"姑苏区平江街道",budget:60,dur:"2h",desc:"「一条平江路，半部姑苏史」。沿河老街，苏州评弹、鸡头米、桂花糕、糖粥，市井烟火里品姑苏。"},
+      {time:"14:30",name:"观前街",cat:"shopping",lat:31.312000,lng:120.623000,addr:"姑苏区观前街",budget:80,dur:"1.5h",desc:"苏州最繁华商业中心，百年老字号云集，采芝斋、黄天源等苏式点心不可错过。"},
+      {time:"16:00",name:"虎丘",cat:"scenic",lat:31.337000,lng:120.589000,addr:"姑苏区虎丘路",budget:70,dur:"2h",desc:"「先见虎丘塔，后见姑苏城」。千年云岩寺塔斜而不倒，剑池、千人石见证吴越春秋。"},
+      {time:"18:30",name:"山塘街",cat:"food",lat:31.322000,lng:120.601000,addr:"姑苏区山塘街",budget:60,dur:"1.5h",desc:"「七里山塘到虎丘」。红灯笼下的小桥流水，夜晚乘船赏灯最是惬意。"}
+    ]
+  },
+  "杭州": {
+    theme:"西湖诗画 · 禅意山水",
+    pois:[
+      {time:"09:00",name:"杭州东站",cat:"transport",lat:30.291331,lng:120.212998,addr:"上城区天城路1号",budget:0,dur:"到达",transit:"高铁到达,地铁1号线直达"},
+      {time:"10:00",name:"西湖·断桥",cat:"scenic",lat:30.260000,lng:120.152000,addr:"西湖区北山街",budget:0,dur:"2h",desc:"「水光潋滟晴方好」。漫步白堤断桥，远眺雷峰塔与三潭印月，体会江南最温柔的湖光。"},
+      {time:"12:30",name:"河坊街",cat:"food",lat:30.243000,lng:120.168000,addr:"上城区河坊街",budget:60,dur:"1.5h",desc:"老杭州风情街，定胜糕、葱包桧、龙须糖，市井美味一网打尽。"},
+      {time:"14:00",name:"灵隐寺",cat:"culture",lat:30.240852,lng:120.101379,addr:"西湖区灵隐路法云弄1号",budget:75,dur:"2h",desc:"千年古刹，「云林禅寺」。济公故事发源地，古木森森、钟鼓悠远，飞来峰造像为江南石窟瑰宝。"},
+      {time:"16:30",name:"雷峰塔",cat:"scenic",lat:30.231000,lng:120.148000,addr:"西湖区南山路15号",budget:40,dur:"1h",desc:"「雷峰夕照」西湖十景之一，白娘子传说地。登塔俯瞰西湖全景与苏堤。"},
+      {time:"18:00",name:"湖滨银泰·夜西湖",cat:"shopping",lat:30.259000,lng:120.160000,addr:"上城区延安路",budget:80,dur:"2h",desc:"湖滨商圈看夜景、观音乐喷泉，西湖畔结束惬意一天。"}
+    ]
+  },
+  "南京": {
+    theme:"六朝古都 · 秦淮风月",
+    pois:[
+      {time:"09:00",name:"南京南站",cat:"transport",lat:31.968730,lng:118.798171,addr:"雨花台区玉兰路98号",budget:0,dur:"到达",transit:"高铁到达,地铁1号线直达"},
+      {time:"10:00",name:"中山陵",cat:"scenic",lat:32.056521,lng:118.857000,addr:"玄武区石象路7号",budget:0,dur:"2h",desc:"「中国近代建筑史上第一陵」。392级台阶直上博爱坊，钟山苍翠中瞻仰一代伟人。"},
+      {time:"12:30",name:"夫子庙·老门东",cat:"food",lat:32.020726,lng:118.788821,addr:"秦淮区贡院街",budget:60,dur:"2h",desc:"秦淮河畔，鸭血粉丝汤、盐水鸭、蟹黄汤包。夜泊秦淮近酒家，十里秦淮尽显金陵风韵。"},
+      {time:"15:00",name:"南京博物院",cat:"culture",lat:32.043000,lng:118.825000,addr:"玄武区中山东路321号",budget:0,dur:"2h",desc:"中国三大博物馆之一，六朝文物瑰宝汇聚，镇馆之宝错银铜牛灯等惊艳世人。"},
+      {time:"17:30",name:"总统府",cat:"culture",lat:32.048000,lng:118.790000,addr:"玄武区长江路292号",budget:35,dur:"1.5h",desc:"近现代史的浓缩，从太平天国到民国，六百年风云在此上演。"}
+    ]
+  },
+  "上海": {
+    theme:"魔都时尚 · 外滩风情",
+    pois:[
+      {time:"09:00",name:"上海虹桥站",cat:"transport",lat:31.194106,lng:121.320666,addr:"闵行区申贵路1500号",budget:0,dur:"到达",transit:"高铁到达,地铁2号线直达市区"},
+      {time:"10:00",name:"豫园·城隍庙",cat:"scenic",lat:31.226768,lng:121.492209,addr:"黄浦区福佑路168号",budget:40,dur:"2h",desc:"明代古典园林「奇秀甲江南」，小桥流水、雕梁画栋。城隍庙小吃街南翔小笼、蟹壳黄令人垂涎。"},
+      {time:"12:30",name:"外滩·陆家嘴",cat:"scenic",lat:31.232091,lng:121.493491,addr:"黄浦区中山东二路",budget:0,dur:"2.5h",desc:"万国建筑博览群+陆家嘴天际线隔江相望，浦东「三件套」与东方明珠同框，魔都精华所在。"},
+      {time:"15:30",name:"南京路步行街",cat:"shopping",lat:31.235000,lng:121.478000,addr:"黄浦区南京东路",budget:100,dur:"2h",desc:"「中华商业第一街」。老字号与潮流门店并存，第一食品商店里海派点心琳琅满目。"},
+      {time:"18:00",name:"田子坊/新天地",cat:"culture",lat:31.209000,lng:121.470000,addr:"黄浦区泰康路",budget:60,dur:"2h",desc:"石库门里的潮流艺术，弄堂与小店交织，感受上海中西合璧的独特魅力。"}
+    ]
+  },
+  "无锡": {
+    theme:"太湖明珠 · 佛光禅境",
+    pois:[
+      {time:"09:00",name:"无锡站",cat:"transport",lat:31.587920,lng:120.306690,addr:"梁溪区兴昌北路",budget:0,dur:"到达",transit:"高铁到达,地铁/公交前往"},
+      {time:"09:45",name:"灵山大佛",cat:"culture",lat:31.430292,lng:120.096391,addr:"滨湖区古竹路",budget:210,dur:"3h",desc:"88米青铜大佛，梵宫气势恢宏。九龙灌浴、五印坛城，世界佛教文化胜地。"},
+      {time:"13:30",name:"蠡湖",cat:"scenic",lat:31.521334,lng:120.248347,addr:"滨湖区环湖路1881号",budget:0,dur:"1.5h",desc:"范蠡西施泛舟处，湖光山色，蠡园小巧精致。"},
+      {time:"15:00",name:"南长街",cat:"food",lat:31.565000,lng:120.305000,addr:"梁溪区南长街",budget:60,dur:"2h",desc:"古运河畔历史文化街区，无锡酱排骨、小笼包、响油鳝糊，江南味道。"}
+    ]
+  },
+  "西安": {
+    theme:"十三朝古都 · 盛世长安",
+    pois:[
+      {time:"09:00",name:"西安北站",cat:"transport",lat:34.376170,lng:108.938544,addr:"未央区尚新路",budget:0,dur:"到达",transit:"高铁到达,地铁2号线直达"},
+      {time:"10:00",name:"大雁塔·大唐不夜城",cat:"culture",lat:34.218221,lng:108.964110,addr:"雁塔区慈恩路1号",budget:30,dur:"2.5h",desc:"玄奘译经之地，大慈恩寺塔巍峨。大唐不夜城金碧辉煌，重现盛唐气象。"},
+      {time:"13:00",name:"回民街",cat:"food",lat:34.262198,lng:108.943659,addr:"莲湖区西大街",budget:60,dur:"1.5h",desc:"西北美食天堂，肉夹馍、羊肉泡馍、biangbiang面、镜糕，舌尖上的长安。"},
+      {time:"14:30",name:"西安城墙",cat:"scenic",lat:34.264000,lng:108.941000,addr:"碑林区南大街",budget:54,dur:"2h",desc:"世界现存最完整古城墙，可骑行或登城楼俯瞰古城全貌。"},
+      {time:"17:00",name:"钟鼓楼",cat:"culture",lat:34.265000,lng:108.940000,addr:"碑林区鼓楼街",budget:60,dur:"1h",desc:"晨钟暮鼓，古城中心的地标，夜景璀璨。"}
+    ]
+  },
+  "北京": {
+    theme:"六朝古都 · 故宫红墙",
+    pois:[
+      {time:"09:00",name:"北京南站",cat:"transport",lat:39.865011,lng:116.379007,addr:"丰台区永外大街车站路",budget:0,dur:"到达",transit:"高铁到达,地铁4号线转"},
+      {time:"10:00",name:"故宫博物院",cat:"culture",lat:39.917990,lng:116.397027,addr:"东城区景山前街4号",budget:60,dur:"3h",desc:"世界最大宫殿建筑群，六百年紫禁城。三大殿、珍宝馆、红墙金瓦，震撼人心的中华文明。"},
+      {time:"13:30",name:"南锣鼓巷",cat:"food",lat:39.937282,lng:116.403187,addr:"东城区南锣鼓巷",budget:60,dur:"1.5h",desc:"「千年古巷」。胡同、四合院、老北京小吃，豆汁焦圈、炸酱面、糖葫芦。"},
+      {time:"15:00",name:"景山公园",cat:"scenic",lat:39.926000,lng:116.399000,addr:"西城区景山西街44号",budget:2,dur:"1h",desc:"登万春亭俯瞰故宫全景，紫禁城中轴线尽收眼底。"},
+      {time:"16:30",name:"后海·什刹海",cat:"scenic",lat:39.941000,lng:116.389000,addr:"西城区什刹海",budget:0,dur:"1.5h",desc:"「先有什刹海，后有北京城」。胡同游船，晚霞下品京味。"}
+    ]
+  },
+  "成都": {
+    theme:"天府之国 · 巴适慢生活",
+    pois:[
+      {time:"09:00",name:"成都东站",cat:"transport",lat:30.628834,lng:104.141478,addr:"成华区邛崃山路333号",budget:0,dur:"到达",transit:"高铁到达,地铁直达",desc:"西南交通枢纽，出站即乘地铁2号线至市区。"},
+      {time:"10:00",name:"宽窄巷子",cat:"culture",lat:30.663831,lng:104.053640,addr:"青羊区长顺上街127号",budget:0,dur:"2h",desc:"清代满城遗存，宽巷子、窄巷子、井巷子。盖碗茶、掏耳朵，体验最地道的成都慢生活。"},
+      {time:"12:30",name:"人民公园·鹤鸣茶社",cat:"food",lat:30.657133,lng:104.057591,addr:"青羊区祠堂街9号",budget:30,dur:"1.5h",desc:"百年茶馆，竹椅盖碗茶配钟水饺。看报发呆晒太阳，成都人的午后特权。"},
+      {time:"14:00",name:"春熙路·太古里",cat:"shopping",lat:30.655500,lng:104.077210,addr:"锦江区春熙路",budget:120,dur:"2h",desc:"IFS爬墙熊猫必打卡，太古里开放式街区，潮流时尚与新派川菜汇聚。"},
+      {time:"16:30",name:"杜甫草堂",cat:"culture",lat:30.660136,lng:104.028527,addr:"青羊区青华路37号",budget:50,dur:"1.5h",desc:"「安得广厦千万间」。诗圣流寓成都故居，茅屋流水浸润诗韵。"}
+    ]
+  },
+  "嘉兴": {
+    theme:"江南水乡 · 南湖红船",
+    pois:[
+      {time:"08:30",name:"嘉兴南站",cat:"transport",lat:30.691368,lng:120.799025,addr:"南湖区双溪路",budget:20,dur:"到达",transit:"高铁到达,91路公交约30分钟",desc:"高铁到达嘉兴南站。出站后右转步行至公交枢纽站，乘坐 91 路公交车前往南湖景区方向。"},
+      {time:"09:15",name:"南湖景区",cat:"scenic",lat:30.753551,lng:120.758610,addr:"南湖区南溪西路1号",budget:60,dur:"2h",transit:"91路公交约30分钟",desc:"江南三大名湖之一，中共一大会址红船在此起航。湖心岛、烟雨楼、红船，感受「轻烟拂渚」的诗画意境。"},
+      {time:"11:30",name:"壕股塔",cat:"culture",lat:30.753916,lng:120.753660,addr:"南湖区南溪西路1号",budget:10,dur:"0.5h",transit:"步行约5分钟",desc:"南湖畔千年古塔，七层八角砖塔，登顶可俯瞰南湖全景与嘉兴古城全貌。"},
+      {time:"12:00",name:"南湖革命纪念馆",cat:"culture",lat:30.747303,lng:120.761177,addr:"南湖区烟雨路186号",budget:0,dur:"1h",transit:"步行约10分钟",desc:"全国爱国主义教育示范基地，展厅全景式展现中共建党历程，免费参观。"},
+      {time:"13:00",name:"五芳斋总店",cat:"food",lat:30.763350,lng:120.753651,addr:"南湖区建国南路286号",budget:50,dur:"1h",transit:"8路公交约15分钟",desc:"百年老字号，嘉兴粽子发源地。鲜肉粽、蛋黄肉粽、豆沙粽——一口咬下糯香四溢。"},
+      {time:"14:15",name:"子城遗址公园",cat:"culture",lat:30.760210,lng:120.752925,addr:"南湖区府前街65号",budget:0,dur:"1h",transit:"步行约8分钟",desc:"嘉兴古城发源地，浙江现存最早城墙遗址。免费开放。"},
+      {time:"15:30",name:"月河历史街区",cat:"scenic",lat:30.771768,lng:120.750804,addr:"南湖区建国北路22号",budget:0,dur:"1.5h",transit:"步行约15分钟",desc:"京杭大运河畔明清古街区，小桥流水、粉墙黛瓦，嘉兴最完整的水乡古街。"},
+      {time:"17:00",name:"粽子文化博物馆",cat:"culture",lat:30.770933,lng:120.750962,addr:"南湖区月河街区中基路35号",budget:20,dur:"0.5h",transit:"步行约3分钟",desc:"国内唯一粽子主题博物馆，从屈原投江到五芳斋百年传承，可体验手工包粽。"},
+      {time:"17:45",name:"梅湾街",cat:"shopping",lat:30.753110,lng:120.748800,addr:"南湖区禾兴南路148号",budget:80,dur:"1h",transit:"8路公交约10分钟",desc:"民国风情商业街，老字号商铺、特色小吃汇聚，晚餐推荐品尝嘉兴本帮菜。"},
+      {time:"19:00",name:"范蠡湖公园",cat:"scenic",lat:30.754523,lng:120.743298,addr:"南湖区环城南路703号",budget:0,dur:"0.5h",transit:"步行约10分钟",desc:"相传范蠡与西施隐居之地，日落时分湖光树影，浪漫收尾。"},
+      {time:"19:45",name:"嘉兴火车站",cat:"transport",lat:30.764279,lng:120.763245,addr:"南湖区城东路",budget:0,dur:"返程",transit:"19路公交约20分钟",desc:"百年火车站，森林中的火车站。复古站台与绿色花园交融，从这里乘车返程。"}
+    ]
+  },
+"天津":{
+    theme:"津门故里·近代风情",
+    pois:[
+      {time:"09:00",name:"天津站",cat:"transport",lat:39.13567,lng:117.20965,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:30",name:"五大道",cat:"culture",lat:39.14403,lng:117.19229,addr:"",budget:0,dur:"2h",desc:"万国建筑博览，英法租界洋楼，citywalk首选"},
+      {time:"12:00",name:"天津古文化街",cat:"food",lat:39.14403,lng:117.19229,addr:"",budget:50,dur:"1.5h",desc:"狗不理包子、十八街麻花、耳朵眼炸糕"},
+      {time:"14:30",name:"天津之眼",cat:"scenic",lat:39.15446,lng:117.18676,addr:"",budget:70,dur:"1.5h",desc:"海河上摩天轮，俯瞰津城夜景"},
+    ]
+  },
+  "石家庄":{
+    theme:"燕赵古韵·桥乡",
+    pois:[
+      {time:"09:00",name:"石家庄站",cat:"transport",lat:38.01061,lng:114.48444,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"河北博物院",cat:"culture",lat:38.01061,lng:114.48444,addr:"",budget:0,dur:"2h",desc:"长信宫灯等镇馆之宝"},
+      {time:"12:30",name:"正定古城",cat:"scenic",lat:37.72248,lng:114.76895,addr:"",budget:60,dur:"2h",desc:"隆兴寺铜铸大佛，千年古郡"},
+      {time:"15:00",name:"赵州桥",cat:"scenic",lat:37.72248,lng:114.76895,addr:"",budget:40,dur:"1h",desc:"中国最古老石拱桥，隋代奇迹"},
+    ]
+  },
+  "承德":{
+    theme:"皇家园林·外八庙",
+    pois:[
+      {time:"09:00",name:"承德站",cat:"transport",lat:40.96532,lng:117.95477,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"避暑山庄",cat:"scenic",lat:41.00028,lng:117.93684,addr:"",budget:130,dur:"3.5h",desc:"清代皇家园林，世界文化遗产"},
+      {time:"13:30",name:"普陀宗乘之庙",cat:"culture",lat:41.00028,lng:117.93684,addr:"",budget:80,dur:"1.5h",desc:"小布达拉宫，外八庙之冠"},
+      {time:"15:30",name:"磬锤峰",cat:"scenic",lat:40.96532,lng:117.95477,addr:"",budget:50,dur:"1h",desc:"棒槌山，承德地标"},
+    ]
+  },
+  "太原":{
+    theme:"晋阳古都·三晋文脉",
+    pois:[
+      {time:"09:00",name:"太原站",cat:"transport",lat:37.86050,lng:112.58762,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"晋祠",cat:"culture",lat:37.70624,lng:112.44693,addr:"",budget:80,dur:"2.5h",desc:"晋阳祠堂园林，宋代彩塑"},
+      {time:"13:00",name:"山西博物院",cat:"culture",lat:37.86050,lng:112.58762,addr:"",budget:0,dur:"2h",desc:"青铜器与晋商文化"},
+      {time:"15:30",name:"柳巷",cat:"food",lat:37.86050,lng:112.58762,addr:"",budget:50,dur:"1.5h",desc:"刀削面、头脑、剔尖面"},
+    ]
+  },
+  "平遥":{
+    theme:"明清古城·晋商故里",
+    pois:[
+      {time:"09:00",name:"平遥古城",cat:"scenic",lat:37.20228,lng:112.17996,addr:"",budget:125,dur:"3h",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"12:00",name:"日昇昌票号",cat:"culture",lat:37.20228,lng:112.17996,addr:"",budget:25,dur:"1.5h",desc:"中国第一家票号"},
+      {time:"13:30",name:"平遥县衙",cat:"culture",lat:37.20228,lng:112.17996,addr:"",budget:60,dur:"2h",desc:"保存完整古代县衙"},
+      {time:"16:00",name:"明清街",cat:"food",lat:37.20228,lng:112.17996,addr:"",budget:40,dur:"1h",desc:"碗秃、平遥牛肉、栲栳栳"},
+    ]
+  },
+  "哈尔滨":{
+    theme:"东方莫斯科·冰雪之都",
+    pois:[
+      {time:"09:00",name:"哈尔滨站",cat:"transport",lat:45.76092,lng:126.63125,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"圣索菲亚教堂",cat:"culture",lat:45.77012,lng:126.62711,addr:"",budget:0,dur:"1h",desc:"东正教拜占庭建筑，城市地标"},
+      {time:"10:45",name:"中央大街",cat:"scenic",lat:45.77382,lng:126.61884,addr:"",budget:80,dur:"2h",desc:"巴洛克商业街，冰棍红肠"},
+      {time:"14:00",name:"太阳岛",cat:"scenic",lat:45.77382,lng:126.61884,addr:"",budget:0,dur:"2h",desc:"松花江度假胜地"},
+    ]
+  },
+  "沈阳":{
+    theme:"盛京故宫·工业重镇",
+    pois:[
+      {time:"09:00",name:"沈阳站",cat:"transport",lat:41.79460,lng:123.39337,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"沈阳故宫",cat:"culture",lat:41.79846,lng:123.45565,addr:"",budget:60,dur:"2h",desc:"满清入关前皇宫"},
+      {time:"12:00",name:"中街",cat:"food",lat:41.79846,lng:123.45565,addr:"",budget:80,dur:"1.5h",desc:"老边饺子、李连贵熏肉"},
+      {time:"14:00",name:"张氏帅府",cat:"culture",lat:41.79460,lng:123.39337,addr:"",budget:50,dur:"1.5h",desc:"张学良故居"},
+    ]
+  },
+  "大连":{
+    theme:"浪漫海滨·帆船之都",
+    pois:[
+      {time:"09:00",name:"大连站",cat:"transport",lat:38.92276,lng:121.63318,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"星海广场",cat:"scenic",lat:38.88202,lng:121.58790,addr:"",budget:0,dur:"2h",desc:"亚洲最大城市广场"},
+      {time:"12:30",name:"老虎滩海洋公园",cat:"scenic",lat:38.88202,lng:121.58790,addr:"",budget:180,dur:"3h",desc:"极地馆海洋表演"},
+      {time:"16:00",name:"东港·渔人码头",cat:"shopping",lat:38.88202,lng:121.58790,addr:"",budget:80,dur:"1h",desc:"东方水城看海"},
+    ]
+  },
+  "长春":{
+    theme:"北国春城·汽车之城",
+    pois:[
+      {time:"09:00",name:"长春站",cat:"transport",lat:43.91121,lng:125.32457,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"伪满皇宫",cat:"culture",lat:43.90562,lng:125.34879,addr:"",budget:70,dur:"2.5h",desc:"溥仪行宫，近代史见证"},
+      {time:"13:00",name:"净月潭",cat:"scenic",lat:43.90562,lng:125.34879,addr:"",budget:30,dur:"2h",desc:"北方大型人工林海"},
+    ]
+  },
+  "济南":{
+    theme:"泉城柳色·七十二泉",
+    pois:[
+      {time:"09:00",name:"济南站",cat:"transport",lat:36.67072,lng:116.99093,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"趵突泉",cat:"scenic",lat:36.66096,lng:117.01616,addr:"",budget:40,dur:"2h",desc:"天下第一泉"},
+      {time:"12:00",name:"大明湖",cat:"scenic",lat:36.66096,lng:117.01616,addr:"",budget:0,dur:"2h",desc:"泉城明珠，湖畔烟柳"},
+      {time:"14:30",name:"芙蓉街",cat:"food",lat:36.66096,lng:117.01616,addr:"",budget:60,dur:"1.5h",desc:"把子肉、油旋、甜沫"},
+    ]
+  },
+  "青岛":{
+    theme:"帆船之都·红瓦绿树",
+    pois:[
+      {time:"09:00",name:"青岛站",cat:"transport",lat:36.06522,lng:120.31265,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"栈桥",cat:"scenic",lat:36.06023,lng:120.31986,addr:"",budget:0,dur:"1.5h",desc:"青岛象征，回澜阁"},
+      {time:"11:00",name:"八大关",cat:"scenic",lat:36.06023,lng:120.31986,addr:"",budget:0,dur:"2h",desc:"万国建筑别墅群"},
+      {time:"14:00",name:"崂山",cat:"scenic",lat:36.10707,lng:120.46928,addr:"",budget:130,dur:"3h",desc:"海上第一名山"},
+    ]
+  },
+  "烟台":{
+    theme:"仙境海岸·葡萄酒城",
+    pois:[
+      {time:"09:00",name:"烟台站",cat:"transport",lat:37.54827,lng:121.38282,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"蓬莱阁",cat:"scenic",lat:37.82697,lng:120.75401,addr:"",budget:100,dur:"3h",desc:"八仙过海传说地"},
+    ]
+  },
+  "合肥":{
+    theme:"大湖名城·庐州古韵",
+    pois:[
+      {time:"09:00",name:"合肥南站",cat:"transport",lat:31.79891,lng:117.29027,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"三河古镇",cat:"scenic",lat:31.51617,lng:117.24544,addr:"",budget:60,dur:"2.5h",desc:"水乡古镇小桥流水"},
+      {time:"13:00",name:"李鸿章故居",cat:"culture",lat:31.51617,lng:117.24544,addr:"",budget:20,dur:"1h",desc:"晚清重臣故宅"},
+      {time:"14:30",name:"包公园",cat:"scenic",lat:31.79891,lng:117.29027,addr:"",budget:30,dur:"1.5h",desc:"包公祠清风阁"},
+    ]
+  },
+  "黄山":{
+    theme:"奇松怪石·徽州文韵",
+    pois:[
+      {time:"09:00",name:"黄山北站",cat:"transport",lat:29.81487,lng:118.27363,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"黄山风景区",cat:"scenic",lat:30.12656,lng:118.17047,addr:"",budget:190,dur:"8h",desc:"奇松怪石云海，世界双遗产"},
+      {time:"17:30",name:"屯溪老街",cat:"food",lat:29.81487,lng:118.27363,addr:"",budget:60,dur:"1.5h",desc:"毛豆腐、烧饼、徽菜"},
+    ]
+  },
+  "福州":{
+    theme:"榕城温泉·闽都文脉",
+    pois:[
+      {time:"09:00",name:"福州站",cat:"transport",lat:26.11386,lng:119.32012,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"三坊七巷",cat:"culture",lat:26.08241,lng:119.29682,addr:"",budget:0,dur:"2.5h",desc:"明清古建筑群"},
+      {time:"12:30",name:"上下杭",cat:"food",lat:26.08241,lng:119.29682,addr:"",budget:60,dur:"1.5h",desc:"鱼丸、肉燕、捞化"},
+      {time:"14:30",name:"鼓山",cat:"scenic",lat:26.08241,lng:119.29682,addr:"",budget:0,dur:"2h",desc:"城市近郊登山望城"},
+    ]
+  },
+  "厦门":{
+    theme:"海上花园·文艺海岛",
+    pois:[
+      {time:"09:00",name:"厦门站",cat:"transport",lat:24.46758,lng:118.11594,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"鼓浪屿",cat:"scenic",lat:24.44464,lng:118.06715,addr:"",budget:0,dur:"3h",desc:"世界遗产钢琴之岛"},
+      {time:"13:00",name:"南普陀寺",cat:"culture",lat:24.44464,lng:118.06715,addr:"",budget:0,dur:"1.5h",desc:"闽南名刹"},
+      {time:"15:00",name:"环岛路",cat:"scenic",lat:24.43058,lng:118.10775,addr:"",budget:0,dur:"1.5h",desc:"厦门滨海景观带"},
+      {time:"17:00",name:"中山路",cat:"food",lat:24.46758,lng:118.11594,addr:"",budget:60,dur:"1.5h",desc:"沙茶面、海蛎煎、土笋冻"},
+    ]
+  },
+  "南昌":{
+    theme:"英雄城·赣江之滨",
+    pois:[
+      {time:"09:00",name:"南昌站",cat:"transport",lat:28.66203,lng:115.91908,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"滕王阁",cat:"culture",lat:28.68151,lng:115.88112,addr:"",budget:50,dur:"1.5h",desc:"王勃名篇之地"},
+      {time:"11:30",name:"八一广场",cat:"culture",lat:28.68151,lng:115.88112,addr:"",budget:0,dur:"1h",desc:"军旗升起的地方"},
+      {time:"13:30",name:"绳金塔美食街",cat:"food",lat:28.68151,lng:115.88112,addr:"",budget:50,dur:"1.5h",desc:"瓦罐汤、南昌米粉"},
+    ]
+  },
+  "景德镇":{
+    theme:"千年瓷都·世界瓷源",
+    pois:[
+      {time:"09:00",name:"景德镇站",cat:"transport",lat:29.28560,lng:117.22227,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"中国陶瓷博物馆",cat:"culture",lat:29.29312,lng:117.17580,addr:"",budget:0,dur:"2h",desc:"千年瓷史传世名瓷"},
+      {time:"12:30",name:"古窑民俗博览区",cat:"scenic",lat:29.29312,lng:117.17580,addr:"",budget:95,dur:"2.5h",desc:"活态烧瓷匠人手作"},
+      {time:"15:30",name:"陶溪川",cat:"shopping",lat:29.29312,lng:117.17580,addr:"",budget:80,dur:"1.5h",desc:"陶瓷文创街区"},
+    ]
+  },
+  "郑州":{
+    theme:"铁路心脏·中原腹地",
+    pois:[
+      {time:"09:00",name:"郑州东站",cat:"transport",lat:34.75928,lng:113.77915,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"10:00",name:"河南博物院",cat:"culture",lat:34.75928,lng:113.77915,addr:"",budget:0,dur:"2.5h",desc:"贾湖骨笛、莲鹤方壶"},
+      {time:"13:00",name:"嵩山少林寺",cat:"culture",lat:34.50698,lng:112.94134,addr:"",budget:80,dur:"3h",desc:"禅宗祖庭，功夫发源地"},
+      {time:"16:30",name:"二七纪念塔",cat:"culture",lat:34.75928,lng:113.77915,addr:"",budget:0,dur:"1h",desc:"郑州地标"},
+    ]
+  },
+  "洛阳":{
+    theme:"十三朝古都·牡丹花城",
+    pois:[
+      {time:"09:00",name:"洛阳龙门站",cat:"transport",lat:34.59399,lng:112.45869,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"龙门石窟",cat:"culture",lat:34.55425,lng:112.47706,addr:"",budget:90,dur:"3h",desc:"世界遗产卢舍那大佛"},
+      {time:"13:30",name:"白马寺",cat:"culture",lat:34.72184,lng:112.60549,addr:"",budget:35,dur:"1.5h",desc:"中国第一古刹"},
+      {time:"15:30",name:"丽景门·洛邑古城",cat:"food",lat:34.72184,lng:112.60549,addr:"",budget:60,dur:"1.5h",desc:"水席、牡丹燕菜"},
+    ]
+  },
+  "开封":{
+    theme:"八朝古都·宋韵水城",
+    pois:[
+      {time:"09:00",name:"开封站",cat:"transport",lat:34.770826,lng:114.353948,addr:"禹王台区中山路南段",budget:0,dur:"到达",desc:"普速或高铁到达，转公交/打车开始游览。",transit:"高铁到达"},
+      {time:"09:40",name:"包公祠",cat:"culture",lat:34.792945,lng:114.339121,addr:"鼓楼区向阳路1号",budget:20,dur:"1h",desc:"纪念刚正不阿的包拯，「开封有个包青天」。湖畔包公祠清风肃穆。",transit:"公交或打车约15分钟"},
+      {time:"11:00",name:"大相国寺",cat:"culture",lat:34.791534,lng:114.354539,addr:"鼓楼区自由路西段36号",budget:40,dur:"1h",desc:"中国十大名寺之一，北宋皇家寺院。鲁智深倒拔垂杨柳之地，藏经阁元代彩绘精美。",transit:"步行约10分钟"},
+      {time:"12:30",name:"鼓楼夜市",cat:"food",lat:34.793693,lng:114.356847,addr:"鼓楼区鼓楼街",budget:60,dur:"1h",desc:"开封「深夜食堂」核心。灌汤包、桶子鸡、炒凉粉、黄焖鱼，地道宋都烟火味。",transit:"步行约5分钟"},
+      {time:"14:00",name:"开封府",cat:"culture",lat:34.78981,lng:114.34703,addr:"鼓楼区包公东湖北岸",budget:65,dur:"1.5h",desc:"北宋天下首府，包拯坐镇之地。大堂「正大光明」匾、清心楼、名宦祠，府衙演艺精彩。",transit:"步行约10分钟"},
+      {time:"16:00",name:"龙亭景区",cat:"scenic",lat:34.806352,lng:114.352206,addr:"龙亭区宋都御街北端",budget:50,dur:"1.5h",desc:"北宋皇宫遗址，龙亭大殿坐落在碧波荡漾的潘杨二湖之间，登楼俯瞰古城中轴线。",transit:"公交或打车约10分钟"},
+      {time:"18:00",name:"清明上河园",cat:"scenic",lat:34.807012,lng:114.344457,addr:"龙亭区龙亭西路5号",budget:120,dur:"3h",desc:"1:1还原《清明上河图》的宋代文化主题公园。东京梦华实景演出、民俗演艺、水上美食街，夜游更有禅意。",transit:"步行约5分钟"},
+      {time:"21:30",name:"宋都御街",cat:"shopping",lat:34.801391,lng:114.351993,addr:"龙亭区龙亭北路",budget:60,dur:"1h",desc:"北宋御街遗址上重建的仿宋古街，灯会璀璨、宋服旅拍、开封特产文创，返程前血拼一波。",transit:"步行约10分钟"}
+    ]
+  },
+  "武汉":{
+    theme:"江城·九省通衢",
+    pois:[
+      {time:"09:00",name:"武汉站",cat:"transport",lat:30.60739,lng:114.42452,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"黄鹤楼",cat:"culture",lat:30.54462,lng:114.30254,addr:"",budget:70,dur:"2h",desc:"天下第一楼"},
+      {time:"12:00",name:"户部巷",cat:"food",lat:30.54462,lng:114.30254,addr:"",budget:60,dur:"1.5h",desc:"热干面、豆皮、汤包"},
+      {time:"14:00",name:"东湖",cat:"scenic",lat:30.55149,lng:114.41154,addr:"",budget:0,dur:"2.5h",desc:"中国最大城中湖"},
+    ]
+  },
+  "长沙":{
+    theme:"星城·山水洲城",
+    pois:[
+      {time:"09:00",name:"长沙南站",cat:"transport",lat:28.14684,lng:113.06530,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"岳麓山·岳麓书院",cat:"culture",lat:28.18393,lng:112.93549,addr:"",budget:50,dur:"2.5h",desc:"千年学府惟楚有才"},
+      {time:"12:30",name:"坡子街·太平街",cat:"food",lat:28.18393,lng:112.93549,addr:"",budget:60,dur:"2h",desc:"臭豆腐、口味虾"},
+      {time:"15:00",name:"橘子洲",cat:"scenic",lat:28.18721,lng:112.96211,addr:"",budget:0,dur:"2h",desc:"青年毛泽东雕像"},
+    ]
+  },
+  "张家界":{
+    theme:"石英峰林·奇峰三千",
+    pois:[
+      {time:"09:00",name:"张家界站",cat:"transport",lat:29.10464,lng:110.48642,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"国家森林公园",cat:"scenic",lat:29.31529,lng:110.43471,addr:"",budget:225,dur:"8h",desc:"袁家界哈利路亚山"},
+    ]
+  },
+  "广州":{
+    theme:"花城·千年商都",
+    pois:[
+      {time:"09:00",name:"广州南站",cat:"transport",lat:22.98856,lng:113.26932,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"广州塔",cat:"scenic",lat:23.10647,lng:113.32446,addr:"",budget:150,dur:"2h",desc:"小蛮腰珠江新城"},
+      {time:"12:00",name:"上下九",cat:"food",lat:23.11403,lng:113.24678,addr:"",budget:60,dur:"2h",desc:"肠粉早茶双皮奶"},
+      {time:"15:00",name:"陈家祠",cat:"culture",lat:23.11403,lng:113.24678,addr:"",budget:10,dur:"1.5h",desc:"岭南建筑瑰宝"},
+    ]
+  },
+  "深圳":{
+    theme:"创新之都·山海之城",
+    pois:[
+      {time:"09:00",name:"深圳北站",cat:"transport",lat:22.60958,lng:114.02922,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"世界之窗",cat:"scenic",lat:22.53464,lng:113.97296,addr:"",budget:200,dur:"3h",desc:"微缩世界景观"},
+      {time:"13:30",name:"深圳湾公园",cat:"scenic",lat:22.53464,lng:113.97296,addr:"",budget:0,dur:"2h",desc:"海边绿道红树林"},
+      {time:"16:00",name:"东门·华强北",cat:"shopping",lat:22.60958,lng:114.02922,addr:"",budget:80,dur:"1.5h",desc:"深圳购物活力"},
+    ]
+  },
+  "珠海":{
+    theme:"百岛之市·浪漫之城",
+    pois:[
+      {time:"09:00",name:"珠海站",cat:"transport",lat:22.21537,lng:113.54936,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"长隆海洋王国",cat:"scenic",lat:22.09687,lng:113.53515,addr:"",budget:300,dur:"6h",desc:"世界级海洋主题公园"},
+      {time:"16:00",name:"珠海情侣路",cat:"scenic",lat:22.21537,lng:113.54936,addr:"",budget:0,dur:"1.5h",desc:"珠海地标滨海慢行"},
+    ]
+  },
+  "桂林":{
+    theme:"山水甲天下·漓江如画",
+    pois:[
+      {time:"09:00",name:"桂林站",cat:"transport",lat:25.26151,lng:110.28243,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"象鼻山",cat:"scenic",lat:25.14720,lng:110.43176,addr:"",budget:55,dur:"1.5h",desc:"桂林城徽"},
+      {time:"11:30",name:"两江四湖",cat:"scenic",lat:25.14720,lng:110.43176,addr:"",budget:0,dur:"1.5h",desc:"游船环城"},
+      {time:"14:00",name:"阳朔·十里画廊",cat:"scenic",lat:24.77505,lng:110.49488,addr:"",budget:200,dur:"3h",desc:"遇龙河竹筏"},
+      {time:"18:00",name:"阳朔西街",cat:"food",lat:24.77505,lng:110.49488,addr:"",budget:80,dur:"1.5h",desc:"啤酒鱼米粉"},
+    ]
+  },
+  "南宁":{
+    theme:"绿城·东盟门户",
+    pois:[
+      {time:"09:00",name:"南宁东站",cat:"transport",lat:22.84189,lng:108.41397,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"青秀山",cat:"scenic",lat:22.78737,lng:108.38712,addr:"",budget:20,dur:"2.5h",desc:"城市绿肺龙象塔"},
+      {time:"13:00",name:"广西民族博物馆",cat:"culture",lat:22.78737,lng:108.38712,addr:"",budget:0,dur:"2h",desc:"壮族铜鼓文化"},
+      {time:"15:30",name:"中山路夜市",cat:"food",lat:22.84189,lng:108.41397,addr:"",budget:50,dur:"1.5h",desc:"老友粉螺蛳粉"},
+    ]
+  },
+  "海口":{
+    theme:"椰城·阳光海岸",
+    pois:[
+      {time:"09:00",name:"海口站",cat:"transport",lat:20.02725,lng:110.16134,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"骑楼老街",cat:"culture",lat:20.04345,lng:110.34326,addr:"",budget:0,dur:"2h",desc:"百年南洋骑楼"},
+      {time:"12:00",name:"火山口地质公园",cat:"scenic",lat:20.04345,lng:110.34326,addr:"",budget:0,dur:"2h",desc:"万年火山遗迹"},
+    ]
+  },
+  "三亚":{
+    theme:"热带天堂·度假圣地",
+    pois:[
+      {time:"09:00",name:"三亚站",cat:"transport",lat:18.29682,lng:109.49283,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"亚龙湾",cat:"scenic",lat:18.24571,lng:109.62854,addr:"",budget:0,dur:"3h",desc:"天下第一湾碧海银沙"},
+      {time:"13:00",name:"天涯海角",cat:"scenic",lat:18.29559,lng:109.34769,addr:"",budget:80,dur:"2h",desc:"天之涯海之角"},
+      {time:"15:30",name:"南山文化旅游区",cat:"culture",lat:18.29559,lng:109.34769,addr:"",budget:150,dur:"3h",desc:"108米海上观音"},
+    ]
+  },
+  "昆明":{
+    theme:"春城·花海之都",
+    pois:[
+      {time:"09:00",name:"昆明站",cat:"transport",lat:25.01577,lng:102.72173,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"滇池·海埂",cat:"scenic",lat:24.95972,lng:102.66549,addr:"",budget:0,dur:"2h",desc:"高原明珠红嘴鸥"},
+      {time:"12:00",name:"翠湖",cat:"scenic",lat:24.95972,lng:102.66549,addr:"",budget:0,dur:"1h",desc:"城中花园讲武堂"},
+      {time:"13:30",name:"石林",cat:"scenic",lat:24.81290,lng:103.32522,addr:"",budget:130,dur:"4h",desc:"世界自然遗产喀斯特"},
+    ]
+  },
+  "大理":{
+    theme:"风花雪月·苍山洱海",
+    pois:[
+      {time:"09:00",name:"大理站",cat:"transport",lat:25.58958,lng:100.25052,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"洱海",cat:"scenic",lat:25.60366,lng:100.24588,addr:"",budget:0,dur:"2.5h",desc:"洱海游船苍山倒影"},
+      {time:"12:30",name:"大理古城",cat:"culture",lat:25.69547,lng:100.16550,addr:"",budget:0,dur:"2h",desc:"白族民居洋人街"},
+      {time:"15:00",name:"崇圣寺三塔",cat:"culture",lat:25.69547,lng:100.16550,addr:"",budget:75,dur:"2h",desc:"大理千年地标"},
+    ]
+  },
+  "丽江":{
+    theme:"世界遗产·东巴文化",
+    pois:[
+      {time:"09:00",name:"丽江站",cat:"transport",lat:26.81093,lng:100.25223,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"丽江古城",cat:"scenic",lat:26.87076,lng:100.23673,addr:"",budget:50,dur:"3h",desc:"纳西古镇小桥流水"},
+      {time:"13:00",name:"束河古镇",cat:"culture",lat:26.87076,lng:100.23673,addr:"",budget:0,dur:"2h",desc:"安静古宅茶马重镇"},
+      {time:"15:30",name:"玉龙雪山",cat:"scenic",lat:27.14105,lng:100.21013,addr:"",budget:260,dur:"4h",desc:"终年积雪蓝月谷"},
+    ]
+  },
+  "贵阳":{
+    theme:"避暑之都·爽爽贵阳",
+    pois:[
+      {time:"09:00",name:"贵阳北站",cat:"transport",lat:26.61945,lng:106.67444,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"青岩古镇",cat:"scenic",lat:26.61945,lng:106.67444,addr:"",budget:10,dur:"2.5h",desc:"明代军事古镇"},
+      {time:"13:00",name:"黔灵山公园",cat:"scenic",lat:26.61945,lng:106.67444,addr:"",budget:5,dur:"2h",desc:"城中灵山猕猴"},
+      {time:"15:30",name:"甲秀楼",cat:"culture",lat:26.61945,lng:106.67444,addr:"",budget:0,dur:"1.5h",desc:"南明河畔地标"},
+    ]
+  },
+  "重庆":{
+    theme:"山城·8D魔幻之都",
+    pois:[
+      {time:"09:00",name:"重庆北站",cat:"transport",lat:29.60923,lng:106.55035,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"洪崖洞",cat:"scenic",lat:29.56212,lng:106.57876,addr:"",budget:0,dur:"2h",desc:"悬崖吊脚楼夜景"},
+      {time:"12:00",name:"磁器口",cat:"food",lat:29.58118,lng:106.44967,addr:"",budget:80,dur:"2.5h",desc:"毛血旺陈麻花火锅"},
+      {time:"15:00",name:"长江索道",cat:"scenic",lat:29.56212,lng:106.57876,addr:"",budget:30,dur:"1h",desc:"跨江索道立体交通"},
+      {time:"16:30",name:"解放碑·来福士",cat:"shopping",lat:29.56212,lng:106.57876,addr:"",budget:60,dur:"1.5h",desc:"两江汇观景台"},
+    ]
+  },
+  "拉萨":{
+    theme:"日光城·雪域圣土",
+    pois:[
+      {time:"09:00",name:"拉萨站",cat:"transport",lat:29.62307,lng:91.07048,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"布达拉宫",cat:"culture",lat:29.65534,lng:91.11822,addr:"",budget:200,dur:"3h",desc:"世界遗产雪山宫殿"},
+      {time:"13:00",name:"大昭寺",cat:"culture",lat:29.65534,lng:91.11822,addr:"",budget:85,dur:"2h",desc:"释迦牟尼十二岁等身像"},
+      {time:"15:30",name:"八廓街",cat:"culture",lat:29.64991,lng:91.13175,addr:"",budget:0,dur:"1.5h",desc:"转经道藏装体验"},
+    ]
+  },
+  "呼和浩特":{
+    theme:"青城·草原之城",
+    pois:[
+      {time:"09:00",name:"呼和浩特东站",cat:"transport",lat:40.84935,lng:111.76598,addr:"",budget:0,dur:"到达",desc:"高铁到达，转公共交通开始游览。",transit:"高铁到达"},
+      {time:"09:45",name:"大召寺",cat:"culture",lat:40.79981,lng:111.65425,addr:"",budget:0,dur:"2h",desc:"藏传佛教寺院"},
+      {time:"12:00",name:"内蒙古博物院",cat:"culture",lat:40.79981,lng:111.65425,addr:"",budget:0,dur:"1.5h",desc:"草原文明恐龙化石"},
+      {time:"14:00",name:"塞上老街",cat:"food",lat:40.79981,lng:111.65425,addr:"",budget:50,dur:"1.5h",desc:"手把肉、奶茶、烧卖"},
+    ]
+  },
+  "宁波":{
+    theme:"海丝古港 · 书藏古今",
+    pois:[
+      {time:"09:00",name:"宁波站",cat:"transport",lat:29.86198,lng:121.536879,addr:"海曙区南站东路19号",budget:0,dur:"到达",transit:"高铁到达",desc:"高铁到达，地铁2号线或公交直达市中心。"},
+      {time:"09:45",name:"天一阁博物院",cat:"culture",lat:29.871109,lng:121.539538,addr:"海曙区天一街10号",budget:30,dur:"2h",desc:"中国现存最早私家藏书楼，「书藏古今」之源，范钦天一阁藏古籍万卷，园林清雅幽深。"},
+      {time:"12:30",name:"鼓楼沿步行街",cat:"food",lat:29.875167,lng:121.546745,addr:"海曙区公园路",budget:60,dur:"1.5h",desc:"千年鼓楼与海曙老城烟火，宁波汤圆、缸鸭狗、糖糕、汤团，尝尽甬帮风味。"},
+      {time:"14:30",name:"宁波老外滩",cat:"scenic",lat:29.877441,lng:121.56084,addr:"江北区中马路",budget:0,dur:"2h",desc:"比上海外滩更早的通商口岸，欧陆旧建筑与三江口夜色交相辉映，可品咖啡看江景。"},
+      {time:"17:30",name:"月湖·天一广场",cat:"shopping",lat:29.8734,lng:121.5512,addr:"海曙区",budget:80,dur:"1.5h",desc:"月湖公园绿意环抱，天一广场商圈购物夜游，结束海丝之城的惬意一天。"}
+    ]
+  },
+  "乌镇":{
+    theme:"千年水乡 · 江南枕水人家",
+    pois:[
+      {time:"09:00",name:"乌镇汽车站",cat:"transport",lat:30.731615,lng:120.493996,addr:"桐乡市青镇路521号",budget:0,dur:"到达",transit:"汽车/高铁到达",desc:"杭州/苏州/嘉兴均有直达班车，也可高铁到桐乡站转乘。"},
+      {time:"09:40",name:"乌镇东栅",cat:"scenic",lat:30.739972,lng:120.497071,addr:"桐乡市子夜路18号",budget:110,dur:"2.5h",desc:"原住民生活气息更浓，茅盾故居、江南百床馆、三白酒坊，行走在枕水而居的旧时光。"},
+      {time:"13:00",name:"乌镇西栅",cat:"scenic",lat:30.749961,lng:120.484191,addr:"桐乡市石佛南路18号",budget:150,dur:"4h",desc:"桐乡最精华的水乡夜景景区，小桥流水、灯笼摇曳，夜游看「江南之最」的水上戏台与灯光秀。"},
+      {time:"18:30",name:"西栅老街",cat:"food",lat:30.7504,lng:120.4859,addr:"西栅景区内",budget:100,dur:"夜",desc:"住一晚枕水民宿，尝定胜糕、臭豆腐、白水鱼，枕着橹声入眠。"}
+    ]
+  },
+  "西塘":{
+    theme:"活着的千年古镇",
+    pois:[
+      {time:"09:30",name:"西塘古镇景区",cat:"scenic",lat:30.94402,lng:120.89319,addr:"嘉善县南苑路258号",budget:95,dur:"全天",desc:"江南六大古镇之一，廊棚绵延千米，雨天不湿鞋。「活着的千年古镇」，春秋的水、唐宋的镇、明清的建筑。"},
+      {time:"11:00",name:"烟雨长廊",cat:"scenic",lat:30.945498,lng:120.894292,addr:"西塘古镇内",budget:0,dur:"1h",desc:"沿河而建的廊棚雨廊，一边是河埠人家、一边是临水店铺，最具辨识度的西塘意象。"},
+      {time:"13:00",name:"送子来凤桥",cat:"culture",lat:30.945616,lng:120.89333,addr:"西塘古镇内",budget:0,dur:"0.5h",desc:"西塘最著名的古桥，一桥通两街寓意吉祥，桥下可乘摇橹船穿桥而过。"},
+      {time:"15:00",name:"西塘小吃",cat:"food",lat:30.9452,lng:120.8936,addr:"古镇中心",budget:80,dur:"2h",desc:"管老太臭豆腐、芡实糕、八珍糕、馄饨老鸭煲，临河小馆感受水乡人家的慢生活。"}
+    ]
+  },
+  "扬州":{
+    theme:"淮左名都 · 烟花三月",
+    pois:[
+      {time:"08:30",name:"扬州站",cat:"transport",lat:32.389402,lng:119.351069,addr:"邗江区文昌西路",budget:0,dur:"到达",transit:"高铁到达",desc:"高铁到达，公交或打车前往瘦西湖景区。"},
+      {time:"09:30",name:"瘦西湖",cat:"scenic",lat:32.411022,lng:119.418481,addr:"邗江区大虹桥路28号",budget:100,dur:"3h",desc:"「烟花三月下扬州」的核心名景，一湖碧水串起五亭桥、白塔、二十四桥，园林与湖光浑然天成。"},
+      {time:"13:00",name:"东关街步行街",cat:"food",lat:32.397422,lng:119.443459,addr:"广陵区国庆路",budget:80,dur:"2h",desc:"扬州最繁华老街，冶春早点、三丁包子、烫干丝、蟹黄汤包，寻味淮扬菜的发源地。"},
+      {time:"15:30",name:"个园",cat:"culture",lat:32.39915,lng:119.4437,addr:"广陵区盐阜东路10号",budget:45,dur:"1.5h",desc:"清代盐商私家园林，以竹石取胜，四季假山为国内孤例，扬州园林代表之作。"},
+      {time:"17:30",name:"古运河夜游",cat:"scenic",lat:32.3945,lng:119.4422,addr:"东关古渡",budget:60,dur:"1.5h",desc:"乘画舫夜游京杭大运河扬州段，两岸灯火，感受「淮左名都」的水乡夜色。"}
+    ]
+  },
+  "威海":{
+    theme:"山海仙境 · 宜居之城",
+    pois:[
+      {time:"09:00",name:"威海站",cat:"transport",lat:37.426952,lng:122.143769,addr:"环翠区疏站路6号",budget:0,dur:"到达",transit:"高铁到达",desc:"高铁到达，公交或打车前往海边景点。"},
+      {time:"10:00",name:"刘公岛",cat:"culture",lat:37.504472,lng:122.190461,addr:"环翠区海滨北路101-2号",budget:120,dur:"3h",desc:"甲午海战纪念地，北洋海军提督署、甲午战争博物馆，乘船登岛感受「海上仙山」的历史厚重。"},
+      {time:"14:00",name:"火炬八街",cat:"scenic",lat:37.522772,lng:122.031309,addr:"高区环海路",budget:0,dur:"1.5h",desc:"直通大海的下坡马路，被誉为「威海版小镰仓」，海天一色出片胜地。"},
+      {time:"16:00",name:"小石岛赶海公园",cat:"scenic",lat:37.526137,lng:122.016768,addr:"环翠区大连路2-8号",budget:50,dur:"2h",desc:"退潮赶海拾贝、海边踏浪，品尝地道威海海鲜，海风里结束山海环抱的一天。"}
+    ]
+  },
+  "兰州":{
+    theme:"黄河之都 · 牛肉面之城",
+    pois:[
+      {time:"09:00",name:"兰州站",cat:"transport",lat:36.034804,lng:103.851122,addr:"城关区火车站东路",budget:0,dur:"到达",transit:"高铁到达",desc:"高铁到达，公交或打车前往黄河边。"},
+      {time:"09:45",name:"中山桥",cat:"culture",lat:36.064553,lng:103.816992,addr:"城关区南滨河路",budget:0,dur:"1h",desc:"黄河第一桥，百年铁桥横跨黄河，桥上赏黄河奔流与白塔山相映，兰州地标。"},
+      {time:"11:00",name:"白塔山公园",cat:"scenic",lat:36.069482,lng:103.811931,addr:"城关区白塔山",budget:0,dur:"1.5h",desc:"隔河遥望中山桥，登白塔山俯瞰黄河第一弯与兰州城全貌。"},
+      {time:"13:00",name:"正宁路小吃夜市",cat:"food",lat:36.05365,lng:103.82014,addr:"城关区正宁路",budget:60,dur:"2h",desc:"兰州夜宵灵魂所在，一碗正宗的兰州牛肉面之外，还有牛奶醪糟、酿皮、羊杂汤等西北风味。"}
+    ]
+  },
+  "敦煌":{
+    theme:"丝路明珠 · 大漠飞天",
+    pois:[
+      {time:"08:00",name:"敦煌站",cat:"transport",lat:40.168088,lng:94.784396,addr:"敦煌市火车站路",budget:0,dur:"到达",transit:"火车到达",desc:"高铁/火车到达，打车或公交前往莫高窟。"},
+      {time:"09:00",name:"莫高窟",cat:"culture",lat:40.038872,lng:94.807921,addr:"敦煌市东南25km",budget:240,dur:"4h",desc:"世界文化遗产「千年佛窟」，九层楼、飞天壁画、彩塑艺术，人类文明的艺术宝库，需提前预约。"},
+      {time:"14:00",name:"鸣沙山月牙泉",cat:"scenic",lat:40.090074,lng:94.679766,addr:"敦煌市城南5km",budget:110,dur:"3h",desc:"沙洲身卧千年不涸的月牙形清泉，骑骆驼、滑沙、赏大漠落日，敦煌自然奇观。"},
+      {time:"18:30",name:"敦煌夜市",cat:"food",lat:40.139979,lng:94.667354,addr:"敦煌市区",budget:80,dur:"2h",desc:"沙洲夜市品尝驴肉黄面、杏皮水、烤羊肉串，感受丝路重镇的烟火气。"}
+    ]
+  },
+  "香格里拉":{
+    theme:"人间天堂 · 高原秘境",
+    pois:[
+      {time:"09:00",name:"香格里拉汽车站",cat:"transport",lat:27.835619,lng:99.710842,addr:"建塘镇",budget:0,dur:"到达",transit:"汽车到达",desc:"丽江/大理均有大巴直达，注意高原反应需提前适应。"},
+      {time:"10:00",name:"独克宗古城",cat:"culture",lat:27.804053,lng:99.704421,addr:"香格里拉市",budget:0,dur:"2h",desc:"中国保存最好、最大的藏民居群，世界最大的转经筒，茶马古道重镇的藏地风情。"},
+      {time:"13:00",name:"噶丹松赞林寺",cat:"culture",lat:27.860031,lng:99.705871,addr:"建塘镇尼旺路3号",budget:90,dur:"2.5h",desc:"云南规模最大的藏传佛教寺院，有「小布达拉宫」之称，金顶白墙在高原蓝天下庄严壮丽。"},
+      {time:"16:00",name:"普达措国家公园",cat:"scenic",lat:27.856429,lng:99.953029,addr:"香格里拉市",budget:120,dur:"2.5h",desc:"中国大陆首个国家公园，属都湖、碧塔海高原湖泊与原始森林、高山草甸相映，人间天堂本貌。"}
+    ]
+  },
+  "凤凰":{
+    theme:"边城风雨 · 沱江人家",
+    pois:[
+      {time:"09:30",name:"凤凰汽车客运站",cat:"transport",lat:27.969046,lng:109.590471,addr:"凤凰县沱江镇",budget:0,dur:"到达",transit:"汽车到达",desc:"吉首/怀化高铁站转乘汽车到达，或大巴直达。"},
+      {time:"10:30",name:"凤凰古城",cat:"scenic",lat:27.948922,lng:109.606301,addr:"凤凰县沱江镇",budget:0,dur:"3h",desc:"沈从文笔下「边城」，沱江两岸吊脚楼依山就势，石板街巷、虹桥、万名塔，湘西最诗意的古城。"},
+      {time:"14:00",name:"沈从文故居",cat:"culture",lat:27.947099,lng:109.602821,addr:"沱江镇中营街10号",budget:10,dur:"1h",desc:"文学巨匠沈从文出生地，古朴四合院里感受《边城》翠翠的故事与湘西文脉。"},
+      {time:"16:00",name:"沱江泛舟",cat:"scenic",lat:27.949006,lng:109.604403,addr:"沱江边",budget:60,dur:"1.5h",desc:"乘乌篷船顺沱江而下，两岸吊脚楼、跳岩桥、浣衣人，听船工号子，夜色更添韵味。"},
+      {time:"18:00",name:"古城夜市",cat:"food",lat:27.948,lng:109.605,addr:"古城内",budget:70,dur:"1.5h",desc:"姜糖、血粑鸭、酸汤鱼、社饭，临江水吧看沱江夜色，湘西风味一网打尽。"}
+    ]
+  },
+  "恩施":{
+    theme:"秘境山水 · 土家风情",
+    pois:[
+      {time:"09:00",name:"恩施站",cat:"transport",lat:30.348317,lng:109.485071,addr:"恩施市枫香路13号",budget:0,dur:"到达",transit:"高铁到达",desc:"高铁直达，公交或打车前往景区。"},
+      {time:"10:00",name:"恩施土司城",cat:"culture",lat:30.301523,lng:109.471601,addr:"恩施市土司路138号",budget:30,dur:"2h",desc:"全国规模最大的土家族土司文化地标，九进堂、城墙、钟鼓楼，感受土司王城的壮阔。"},
+      {time:"13:00",name:"恩施大峡谷",cat:"scenic",lat:30.473245,lng:109.184681,addr:"恩施市沐抚办事处",budget:150,dur:"4h",desc:"喀斯特地貌奇观，绝壁栈道、云龙地缝、一炷香石柱，媲美科罗拉多大峡谷的秘境峡谷。"},
+      {time:"18:00",name:"土家女儿城",cat:"shopping",lat:30.268824,lng:109.503748,addr:"恩施市金龙大道98号",budget:80,dur:"2h",desc:"土家民俗文化街区，女儿会、摆手舞、摔碗酒、苞谷粑，体验热情好客的土家风情。"}
+    ]
+  },
+};
+
+/* ============================================================
+   交通参考数据库：出发城市|目的地 → 高铁参考
+   票价来源：12306/携程二等座参考价；耗时按常见车次
+   带"~"为按线路规律估算，仅供参考
+   ============================================================ */
+var transitDB = {
+  // —— 上海 → 各目的地 ——
+  "上海|嘉兴":{"price":40,"dur":35,"note":"沪杭线0.5h","sure":true},
+  "上海|苏州":{"price":40,"dur":35,"note":"京沪线0.5h","sure":true},
+  "上海|杭州":{"price":73,"dur":60,"note":"沪杭线1h","sure":true},
+  "上海|南京":{"price":140,"dur":100,"note":"京沪线1.7h","sure":true},
+  "上海|无锡":{"price":60,"dur":45,"note":"京沪线0.7h","sure":true},
+  "上海|西安":{"price":636,"dur":360,"note":"沪陕线6h","sure":true},
+  "上海|成都":{"price":728,"dur":660,"note":"沪蓉动车(实测)","sure":true},
+  "上海|北京":{"price":630,"dur":300,"note":"京沪线5h","sure":true},
+  "上海|青岛":{"price":310,"dur":330,"note":"沪青高铁5.5h(实测)","sure":true},
+  "上海|烟台":{"price":360,"dur":380,"note":"沪烟高铁(估算实测)","sure":true},
+  // —— 杭州 → 各目的地 ——
+  "杭州|嘉兴":{"price":38,"dur":30,"note":"沪杭线0.5h","sure":true},
+  "杭州|苏州":{"price":120,"dur":85,"note":"经沪转(估算)"},
+  "杭州|上海":{"price":73,"dur":60,"note":"沪杭线1h","sure":true},
+  "杭州|南京":{"price":130,"dur":110,"note":"宁杭线1.8h","sure":true},
+  "杭州|无锡":{"price":110,"dur":95,"note":"经沪转(估算)"},
+  "杭州|西安":{"price":600,"dur":320,"note":"宁西线(估算)"},
+  "杭州|成都":{"price":600,"dur":600,"note":"沪蓉线(估算)"},
+  "杭州|北京":{"price":620,"dur":290,"note":"宁杭转京沪(估算)"},
+  // —— 苏州 → 各目的地 ——
+  "苏州|嘉兴":{"price":84,"dur":65,"note":"京沪转沪杭1h","sure":true},
+  "苏州|上海":{"price":40,"dur":35,"note":"京沪线0.5h","sure":true},
+  "苏州|杭州":{"price":120,"dur":90,"note":"经沪转(估算)"},
+  "苏州|南京":{"price":100,"dur":65,"note":"京沪线1h","sure":true},
+  "苏州|无锡":{"price":30,"dur":25,"note":"京沪线0.4h","sure":true},
+  "苏州|西安":{"price":600,"dur":310,"note":"京沪转徐兰(估算)"},
+  "苏州|成都":{"price":600,"dur":580,"note":"沪蓉线(估算)"},
+  "苏州|北京":{"price":524,"dur":280,"note":"京沪线(估算)"},
+  // —— 南京 → 各目的地 ——
+  "南京|嘉兴":{"price":180,"dur":140,"note":"京沪转沪杭2.3h","sure":true},
+  "南京|苏州":{"price":100,"dur":65,"note":"京沪线1h","sure":true},
+  "南京|杭州":{"price":130,"dur":110,"note":"宁杭线1.8h","sure":true},
+  "南京|上海":{"price":140,"dur":100,"note":"京沪线1.7h","sure":true},
+  "南京|无锡":{"price":70,"dur":50,"note":"京沪线0.8h","sure":true},
+  "南京|西安":{"price":540,"dur":270,"note":"京沪转徐兰(估算)"},
+  "南京|成都":{"price":570,"dur":540,"note":"沪蓉线(估算)"},
+  "南京|北京":{"price":443,"dur":200,"note":"京沪线3.3h","sure":true},
+  // —— 无锡 → 各目的地 ——
+  "无锡|嘉兴":{"price":110,"dur":85,"note":"京沪转沪杭(估算)"},
+  "无锡|上海":{"price":60,"dur":45,"note":"京沪线0.7h","sure":true},
+  "无锡|苏州":{"price":30,"dur":25,"note":"京沪线0.4h","sure":true},
+  "无锡|杭州":{"price":110,"dur":95,"note":"经沪转(估算)"},
+  "无锡|南京":{"price":70,"dur":50,"note":"京沪线0.8h","sure":true},
+  "无锡|西安":{"price":580,"dur":300,"note":"京沪转徐兰(估算)"},
+  "无锡|成都":{"price":590,"dur":560,"note":"沪蓉线(估算)"},
+  "无锡|北京":{"price":513,"dur":250,"note":"京沪线(估算)"},
+  // —— 北京 → 各目的地 ——
+  "北京|嘉兴":{"price":650,"dur":340,"note":"京沪转5.5h","sure":true},
+  "北京|苏州":{"price":560,"dur":280,"note":"京沪线(实测)","sure":true},
+  "北京|杭州":{"price":622,"dur":290,"note":"京沪转(实测)","sure":true},
+  "北京|上海":{"price":630,"dur":300,"note":"京沪线5h","sure":true},
+  "北京|南京":{"price":443,"dur":200,"note":"京沪线3.3h","sure":true},
+  "北京|西安":{"price":515,"dur":280,"note":"京广转徐兰(实测)","sure":true},
+  "北京|成都":{"price":890,"dur":510,"note":"京蓉高铁(实测)","sure":true},
+  "北京|无锡":{"price":513,"dur":250,"note":"京沪线(估算)"},
+  "北京|青岛":{"price":365,"dur":280,"note":"京青高铁3.3-5h(实测)","sure":true},
+  "北京|烟台":{"price":420,"dur":320,"note":"京烟高铁(估算实测)","sure":true},
+  // —— 郑州 → 各目的地 ——
+  "郑州|嘉兴":{"price":410,"dur":290,"note":"徐沪转沪杭(估算)"},
+  "郑州|西安":{"price":245,"dur":150,"note":"徐兰线2.5h","sure":true},
+  "郑州|南京":{"price":280,"dur":180,"note":"京沪线(估算)"},
+  "郑州|杭州":{"price":270,"dur":180,"note":"陇海转(估算)"},
+  "郑州|成都":{"price":350,"dur":360,"note":"西成转(估算)"},
+  "郑州|北京":{"price":310,"dur":160,"note":"京广线(估算)"},
+  "郑州|武汉":{"price":293,"dur":150,"note":"京广线2.5h","sure":true},
+  // —— 合肥 → 各目的地 ——
+  "合肥|嘉兴":{"price":300,"dur":230,"note":"京沪转沪杭(估算)"},
+  "合肥|南京":{"price":70,"dur":60,"note":"合沪线1h","sure":true},
+  "合肥|杭州":{"price":150,"dur":110,"note":"合杭线(估算)"},
+  "合肥|上海":{"price":150,"dur":140,"note":"合沪线(估算)"},
+  "合肥|西安":{"price":380,"dur":200,"note":"宁西线(估算)"},
+  "合肥|北京":{"price":440,"dur":210,"note":"京沪线(估算)"},
+  // —— 武汉 → 各目的地 ——
+  "武汉|杭州":{"price":300,"dur":240,"note":"武杭线(估算)"},
+  "武汉|南京":{"price":150,"dur":140,"note":"合武转(估算)"},
+  "武汉|西安":{"price":430,"dur":230,"note":"沪蓉转(估算)"},
+  "武汉|成都":{"price":500,"dur":420,"note":"沪蓉线(估算)"},
+  "武汉|北京":{"price":520,"dur":280,"note":"京广线(估算)"},
+  // —— 新乡 → 主要目的地（用户所在地，补真实价）——
+  "新乡|北京":{"price":281,"dur":180,"note":"京广线3h(实测)","sure":true},
+  "新乡|郑州":{"price":310,"dur":25,"note":"京广线0.4h(实测)","sure":true},
+  "新乡|青岛":{"price":340,"dur":270,"note":"济青线4-5h(实测)","sure":true},
+  "新乡|西安":{"price":516,"dur":180,"note":"陇海线3h(实测)","sure":true},
+  "新乡|武汉":{"price":521,"dur":150,"note":"京广线2.4h(实测)","sure":true},
+  "新乡|合肥":{"price":276,"dur":210,"note":"合武线3.5h(用户12306实测)","sure":true},
+  "新乡|南京":{"price":343,"dur":240,"note":"京沪转4h(实测)","sure":true},
+  "新乡|苏州":{"price":470,"dur":310,"note":"京沪转5.2h(实测)","sure":true},
+  "新乡|杭州":{"price":544,"dur":340,"note":"宁杭线5h(实测)","sure":true},
+  "新乡|上海":{"price":538,"dur":330,"note":"京沪线5.5h(实测)","sure":true}
+};
+
+/* 各目的地地理中心（用于缺失起点估算） */
+var destCoord = {
+  "嘉兴":[30.75800,120.75900],"苏州":[31.29900,120.58500],"杭州":[30.27400,120.15500],"南京":[32.06100,118.79600],"上海":[31.23000,121.47400],
+  "无锡":[31.49200,120.31200],"西安":[34.34100,108.94000],"成都":[30.57300,104.06700],"北京":[39.90400,116.40700],"天津":[39.13567,117.20965],
+  "石家庄":[38.01061,114.48444],"承德":[40.96532,117.95477],"太原":[37.86050,112.58762],"平遥":[37.20228,112.17996],"哈尔滨":[45.76092,126.63125],
+  "沈阳":[41.79460,123.39337],"大连":[38.92276,121.63318],"长春":[43.91121,125.32457],"济南":[36.67072,116.99093],"青岛":[36.06522,120.31265],
+  "烟台":[37.54827,121.38282],"合肥":[31.79891,117.29027],"黄山":[29.81487,118.27363],"福州":[26.11386,119.32012],"厦门":[24.46758,118.11594],
+  "南昌":[28.66203,115.91908],"景德镇":[29.28560,117.22227],"郑州":[34.75928,113.77915],"洛阳":[34.59399,112.45869],"武汉":[30.60739,114.42452],
+  "长沙":[28.14684,113.06530],"张家界":[29.10464,110.48642],"广州":[22.98856,113.26932],"深圳":[22.60958,114.02922],"珠海":[22.21537,113.54936],
+  "桂林":[25.26151,110.28243],"南宁":[22.84189,108.41397],"海口":[20.02725,110.16134],"三亚":[18.29682,109.49283],"昆明":[25.01577,102.72173],
+  "大理":[25.58958,100.25052],"丽江":[26.81093,100.25223],"贵阳":[26.61945,106.67444],"重庆":[29.60923,106.55035],"拉萨":[29.62307,91.07048],
+  "呼和浩特":[40.84935,111.76598],"开封":[34.79700,114.30700],"安阳":[36.09800,114.39300],"平顶山":[33.77500,113.18300],
+  "宁波":[29.87000,121.54000],"乌镇":[30.75000,120.48000],"西塘":[30.94000,120.89000],"扬州":[32.41000,119.42000],"威海":[37.43000,122.14000],
+  "兰州":[36.06000,103.83000],"敦煌":[40.04000,94.80000],"香格里拉":[27.82000,99.70000],"凤凰":[27.95000,109.60000],"恩施":[30.35000,109.49000]
+};
+
+/* ============================================================
+   交通获取：命中"起点|终点"用真实库，否则按直线距离估算
+   ============================================================ */
+function getTransit(origin,dest){
+  var o=origin.trim(),d=dest.trim();
+  var key=o+'|'+d;
+  // 计算距离（真实库也补充估算铁路距离，供"远近"维度使用）
+  function railDist(o2,d2){
+    var oc=cityCoord[o2]||cityCoord[o],dc=destCoord[d2]||destCoord[d];
+    if(oc&&dc)return Math.round(haversine(oc[0],oc[1],dc[0],dc[1])*1.35);
+    return null;
+  }
+  // 直接命中
+  if(transitDB[key]){
+    var r1=transitDB[key];
+    return {price:r1.price,dur:r1.dur,note:r1.note,sure:r1.sure,dist:railDist(o,d)||Math.round(r1.price/0.33)};
+  }
+  // 尝试去掉"市"
+  var o2=o.replace(/市$/,''),d2=d.replace(/市$/,'');
+  key=o2+'|'+d2;
+  if(transitDB[key]){
+    var r2=transitDB[key];
+    return {price:r2.price,dur:r2.dur,note:r2.note,sure:r2.sure,dist:railDist(o2,d2)||Math.round(r2.price/0.33)};
+  }
+  // 起点坐标
+  var oc=cityCoord[o]||cityCoord[o2];
+  var dc=destCoord[d]||destCoord[d2];
+  if(oc&&dc){
+    var dist=haversine(oc[0],oc[1],dc[0],dc[1]);
+    var railDist=Math.round(dist*1.35);
+    // 高铁二等座估算：约0.33~0.39元/km（视线路），按打约值估算
+    var estDur=Math.max(20,Math.round(railDist/240*60));
+    var estPrice=Math.max(30,Math.round(railDist*0.33/10)*10);
+    // 对长线适度上调单价（长线含更多过路/枢纽溢价）
+    if(railDist>1200)estPrice=Math.max(estPrice,Math.round(railDist*0.36/10)*10);
+    return {price:estPrice,dur:estDur,note:'按直线距离估算','sure':false,'estimated':true,dist:railDist};
+  }
+  return null;
+}
+
+var cityCoord = {
+  "北京":[39.90400,116.40700],"上海":[31.23000,121.47400],"广州":[23.12900,113.26400],"天津":[39.08500,117.20000],
+  "重庆":[29.56400,106.55100],"深圳":[22.54300,114.05800],"成都":[30.57300,104.06700],"西安":[34.34100,108.94000],
+  "武汉":[30.59300,114.30500],"南京":[32.06100,118.79600],"杭州":[30.27400,120.15500],"苏州":[31.29900,120.58500],
+  "郑州":[34.74600,113.62500],"长沙":[28.22800,112.93800],"合肥":[31.82100,117.22700],"沈阳":[41.79600,123.40400],
+  "哈尔滨":[45.80300,126.53500],"长春":[43.81700,125.32400],"大连":[38.91400,121.61500],"青岛":[36.06700,120.38300],
+  "济南":[36.65100,117.12000],"昆明":[24.88000,102.83300],"石家庄":[38.04300,114.51500],"太原":[37.87000,112.54900],
+  "南昌":[28.68200,115.85800],"福州":[26.07400,119.29600],"厦门":[24.48000,118.08900],"南宁":[22.81700,108.36600],
+  "海口":[20.04400,110.19900],"三亚":[18.25300,109.51200],"贵阳":[26.64700,106.63000],"兰州":[36.06100,103.83400],
+  "银川":[38.48700,106.23100],"西宁":[36.61700,101.77800],"乌鲁木齐":[43.82600,87.61700],"呼和浩特":[40.84200,111.74900],
+  "拉萨":[29.64500,91.14000],"无锡":[31.49100,120.31200],"常州":[31.81100,119.97400],"徐州":[34.20500,117.28400],
+  "嘉兴":[30.75800,120.75900],"绍兴":[29.99700,120.58200],"湖州":[30.89300,120.08800],"宁波":[29.86800,121.54400],
+  "温州":[28.00000,120.67200],"金华":[29.07900,119.64700],"烟台":[37.46400,121.44800],"威海":[37.51300,122.12000],
+  "洛阳":[34.61900,112.45400],"开封":[34.79700,114.30700],"安阳":[36.09800,114.39300],"宜昌":[30.69200,111.29000],
+  "襄阳":[32.04200,112.14400],"十堰":[32.64700,110.79800],"张家界":[29.11700,110.47900],"岳阳":[29.35700,113.12900],
+  "衡阳":[26.89300,112.57200],"桂林":[25.27400,110.29000],"柳州":[24.32600,109.41600],"北戴河":[39.82500,119.48600],
+  "承德":[40.95100,117.96300],"秦皇岛":[39.93600,119.58300],"珠海":[22.27100,113.57700],"佛山":[23.02200,113.12200],
+  "大理":[25.60600,100.26800],"丽江":[26.85500,100.22800],"香格里拉":[27.82600,99.70000],"西双版纳":[22.00900,100.79700],
+  "黄果树":[25.98300,105.66700],"遵义":[27.72500,106.92700],"敦煌":[40.14200,94.66200],"嘉峪关":[39.77300,98.28900],
+  "张掖":[38.92500,100.45000],"平遥":[37.20200,112.17700],"大同":[40.07600,113.30000],"五台山":[38.98000,113.59000],
+  "黄山":[29.71500,118.33700],"九华山":[30.47800,117.81700],"天柱山":[30.73300,116.53300],"景德镇":[29.26900,117.17800],
+  "婺源":[29.24800,117.86200],"赣州":[25.83100,114.93500],"蓬莱":[37.81200,120.75900],"泰山":[36.25300,117.11300],
+  "曲阜":[35.58100,116.98600],"西塘":[30.94300,120.89000],"乌镇":[30.74300,120.48500],"南浔":[30.87200,120.43000],
+  "凤凰古城":[27.94900,109.60000],"恩施":[30.28200,109.48900],"长白山":[42.17200,128.12600],"漠河":[52.97300,122.53900],
+  "延吉":[42.90400,129.50900],"呼伦贝尔":[49.21100,119.76600],"满洲里":[49.59600,117.37900],"海拉尔":[49.21200,119.73600],
+  "哈密":[42.83300,93.51500],"吐鲁番":[42.95100,89.19000],"喀什":[39.47000,75.99000],"伊宁":[43.91500,81.27700],
+  "阿勒泰":[47.86600,88.13900],"文昌":[19.61300,110.75400],"西昌":[27.89400,102.26400],"攀枝花":[26.58000,101.71500],
+  "绵阳":[31.46700,104.67900],"乐山":[29.55200,103.76500],"峨眉山":[29.60100,103.48600],"都江堰":[31.00200,103.61900],
+  "新乡":[35.30400,113.93000],"许昌":[34.03600,113.85200],"商丘":[34.41400,115.65600],"南阳":[32.99000,112.52900],
+  "信阳":[32.14700,114.09100],"焦作":[35.21500,113.24200],"周口":[33.62100,114.65200],"驻马店":[33.01300,114.02400],
+  "平顶山":[33.76600,113.19300],"漯河":[33.58100,114.01700],"鹤壁":[35.74800,114.29700],"濮阳":[35.76200,115.02900],
+  "三门峡":[34.77200,111.20000],"济源":[35.09000,112.60200],"扬州":[32.41000,119.42000],"凤凰":[27.95000,109.60000]
+};
+
+/* ============================================================
+   折中评分：价格40% + 距离30% + 耗时30%，加权归一化，越低越优
+   ============================================================ */
+var W_PRICE=0.40,W_DIST=0.30,W_DUR=0.30;
+function minMaxNorm(mn,mx,v){if(mx===mn)return 0;return (v-mn)/(mx-mn);}
+function computeScore(p){return p.sPrice*W_PRICE+p.sDist*W_DIST+p.sDur*W_DUR;}
+function fmtDur(min){
+  if(min<60)return min+'分钟';
+  var h=Math.floor(min/60),m=min%60;
+  return h+'小时'+(m?m+'分':'');
+}
+function fmtMoney(n){return '¥'+n.toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function fmtDist(km){return Math.round(km)+' km';}
+function haversine(lat1,lng1,lat2,lng2){
+  var R=6371.0,toR=Math.PI/180;
+  var dLat=(lat2-lat1)*toR,dLng=(lng2-lng1)*toR;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+
+        Math.cos(lat1*toR)*Math.cos(lat2*toR)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+/* ============================================================
+   状态与 UI 管理
+   ============================================================ */
+var map=null,marker=null,polyline=null,infoWin=null;
+var ovMap=null,ovMarker=null,ovPolyline=null,ovLabel=null;
+var activeIdx=-1, maxInputs={origin:4,dest:4};
+
+function readInputs(className){
+  var arr=[];
+  document.querySelectorAll('.'+className).forEach(function(inp){
+    var v=inp.value.trim();if(v)arr.push(v);
+  });
+  return arr.filter(function(v,i){return arr.indexOf(v)===i});
+}
+function addField(containerId,addBtnId,cls,placeholder,maxCnt){
+  var wrap=document.getElementById(containerId);
+  var count=wrap.querySelectorAll('.'+cls).length;
+  if(count>=maxCnt)return;
+  var addBtn=document.getElementById(addBtnId);
+  var div=document.createElement('div');
+  div.className='field-input-wrap';
+  div.innerHTML='<input type="text" class="field-input '+cls+'" placeholder="'+placeholder+'" maxlength="8">';
+  wrap.insertBefore(div,addBtn);
+  updateAddBtns();
+  div.querySelector('input').focus();
+}
+function updateAddBtns(){
+  document.getElementById('add-origin').disabled=
+    document.getElementById('origin-fields').querySelectorAll('.origin-input').length>=maxInputs.origin;
+  document.getElementById('add-dest').disabled=
+    document.getElementById('dest-fields').querySelectorAll('.dest-input').length>=maxInputs.dest;
+}
+
+/* 确认目的地：单目的地直接出攻略；多目的地综合成一条多日旅游线路 */
+function confirmDest(){
+  var dests=readInputs('dest-input');
+  if(dests.length===0){alert('请先输入或选择一个目的地城市');return;}
+  // 校验所有目的地是否都在行程库内
+  var bad=dests.filter(function(d){return !destPOIs[d];});
+  if(bad.length>0){
+    alert('「'+bad.join('、')+'」尚未内置详细行程数据，请从热门目的地中选择，或尝试其他城市');
+    return;
+  }
+  if(dests.length===1){
+    // 单个目的地 → 直接生成该城旅游攻略
+    renderDestItinerary(dests[0]);
+  }else{
+    // 多个目的地 → 综合成一条多日旅游线路
+    renderComboItinerary(dests);
+  }
+  // 滚动到行程区
+  var mainEl=document.querySelector('.main');
+  if(mainEl)mainEl.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ============================================================
+   多目的地综合旅游线路：
+   把多个目的地按地理邻近排序，串成一条不绕路的综合行程，
+   城市间插入"高铁衔接阶段"，生成统一的分天攻略 + 全图打点连线
+   ============================================================ */
+function renderComboItinerary(destsIn){
+  // 记录当前综合线路城市（供天数change重渲染用）
+  curComboDests=destsIn.slice();
+  // 贪心最近邻：把多个城市按地理邻近排成不绕路的顺序（取每城首个POI作城市中心）
+  var order=[], remain=destsIn.slice();
+  order.push(remain[0]);
+  var last=destPOIs[remain[0]].pois[0];
+  remain.shift();
+  while(remain.length>0){
+    var bestIdx=-1,bestD=Infinity;
+    remain.forEach(function(c,i){
+      var pt=destPOIs[c].pois[0];
+      var d=Math.pow((pt.lat-last.lat),2)+Math.pow((pt.lng-last.lng),2);
+      if(d<bestD){bestD=d;bestIdx=i;}
+    });
+    order.push(remain[bestIdx]);
+    last=destPOIs[remain[bestIdx]].pois[0];
+    remain.splice(bestIdx,1);
+  }
+
+  // 组合所有 POI，城市之间插入"高铁衔接"阶段
+  var combo=[];
+  order.forEach(function(c,ci){
+    var pois=destPOIs[c].pois||[];
+    if(ci>0){
+      // 上一城 → 本城 的衔接阶段（交通类）
+      var prev=order[ci-1];
+      combo.push({
+        time:'衔接', name:prev+' → '+c, cat:'transport',
+        lat:destPOIs[c].pois[0].lat, lng:destPOIs[c].pois[0].lng,
+        addr:'城市间高铁', budget:0, dur:'乘车',
+        desc:'转场：自 '+prev+' 前往 '+c+'，建议乘坐高铁衔接。',
+        transit:'切换城市 · 建议高铁'
+      });
+    }
+    pois.forEach(function(p){combo.push(p);});
+  });
+
+  // 日标题（综合线路版）
+  var daysEl=document.getElementById('days-input');
+  var daysIn=daysEl?parseInt(daysEl.value,10)||1:1;
+  // 综合线路至少与城市数对齐（每城一日），并叠加用户选择的机动天数
+  var realDays=Math.max(order.length, daysIn);
+  curDest=order.join('→');
+  var themeList=order.join(' · ');
+  document.getElementById('day-hdr').innerHTML=
+    '<h2>综合线路 · '+order.join('→')+'</h2>'+
+    '<p class="theme">'+themeList+' 串联 · 全程公共交通衔接</p>'+
+    '<span class="day-budget">共 '+order.length+' 城 · 分 '+realDays+' 天 · 综合行程</span>';
+  var legendBox=document.getElementById('legend');
+  legendBox.innerHTML='';
+  ['scenic','food','culture','shopping','transport'].forEach(function(k){
+    legendBox.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:'+cats[k].color+'"></span>'+cats[k].name+'</div>';
+  });
+
+  // 渲染综合地图（全城打点 + 连线）——即使地图异常也保证下方卡片正常渲染
+  try{ renderMap(order[0]+'综合线路',combo,'串联线路'); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(34.7,114.3)); }catch(e2){} }
+  // 渲染综合卡片（按天分段，含各城点位与衔接）
+  renderCards(combo, realDays);
+  var totalBudget=combo.reduce(function(s,p){return s+(p.budget||0)},0);
+  document.getElementById('day-total').innerHTML=
+    '<span>'+order.length+' 城 · '+combo.length+' 个点位 · '+realDays+' 天</span><b>'+fmtMoney(totalBudget)+'</b>';
+}
+/* ============================================================
+   核心计算：根据出发城市 × 目的地，折中推荐
+   ============================================================ */
+function calculate(){
+  var origins=readInputs('origin-input');
+  var dests=readInputs('dest-input');
+  if(origins.length===0){alert('请至少输入一个出发城市');return;}
+  if(origins.length<2){
+    alert('折中推荐需要至少 2 个出发城市，请添加第 2 个出发点');
+    return;
+  }
+
+  var candidateDests;
+  if(dests.length===0){
+    // 目的地留空 → 从内置热门目的地库自动折中推荐
+    candidateDests=Object.keys(destPOIs);
+  }else{
+    candidateDests=dests;
+  }
+
+  /* 对每个候选目的地，聚合所有出发城市到它的交通，
+     只保留"能覆盖全部出发点"的目的地，否则会偏袒少数出发点 */
+  var destRows=[];
+  candidateDests.forEach(function(d){
+    var legs=[]; // 该目的地下所有出发→它的行程
+    origins.forEach(function(o){
+      var t=getTransit(o,d);
+      if(t)legs.push({origin:o,dest:d,t:t,price:t.price,dur:t.dur});
+    });
+    // 关键：必须对每个出发点都能算到，才能进入"团体均衡"比较
+    if(legs.length===origins.length)destRows.push({dest:d,legs:legs});
+  });
+  if(destRows.length===0){
+    // 无法同时对所有出发点测算交通 —— 提示用户哪些出发点缺少数据
+    var missing=origins.filter(function(o){
+      return candidateDests.every(function(d){return !getTransit(o,d);});
+    });
+    alert('无法为这些出发城市统一测算高铁方案'+
+      (missing.length?'（缺数据:'+missing.join('、')+'）':'，请检查城市名）'));
+    return;
+  }
+
+  /* 在一维"全部出发×目的地"的腿里，用实际高铁里程(distance)做归一化基准 */
+  var allLegs=[];
+  destRows.forEach(function(r){r.legs.forEach(function(l){allLegs.push(l);});});
+  var dists=allLegs.map(function(l){return l.t.dist||l.price;}); // dist 缺失时退化为价格近似里程
+  var mnD=Math.min.apply(null,dists),mxD=Math.max.apply(null,dists);
+
+  allLegs.forEach(function(l){
+    l.dist=l.t.dist||l.price;
+    l.sDist=minMaxNorm(mnD,mxD,l.dist);
+    l.score=l.sDist; // 纯距离单腿得分(参考)
+  });
+
+  /* 目的地团体"距离均衡"得分：
+     目标 = 找"到各出发点实际高铁里程都差不多"的城市。
+     均衡指标 = 各出发点里程的标准差(spread)，越小越好；
+     辅以"平均里程适中"避免选到都太远的目的地：
+       finalScore = norm(spread) * 0.6 + norm(avgDist) * 0.4   */
+  var allSpreads=[],allAvgs=[];
+  destRows.forEach(function(r){
+    var ds=r.legs.map(function(l){return l.dist;});
+    var sum=0;ds.forEach(function(x){sum+=x;});
+    r.avgDist=sum/ds.length;
+    // 平均里程的归一化参考（平均越短越好，但需在本次候选内相对）
+    var spreadSum=0;ds.forEach(function(x){spreadSum+=x-r.avgDist;});
+    r.spread=Math.sqrt(ds.reduce(function(a,x){return a+(x-r.avgDist)*(x-r.avgDist);},0)/ds.length);
+    r.maxDist=Math.max.apply(null,ds);
+    r.minDist=Math.min.apply(null,ds);
+    r.avgPrice=r.legs.reduce(function(s,l){return s+l.price},0)/r.legs.length;
+    r.avgDur=r.legs.reduce(function(s,l){return s+l.dur},0)/r.legs.length;
+    r.allSure=r.legs.every(function(l){return l.t.sure});
+    allSpreads.push(r.spread);allAvgs.push(r.avgDist);
+  });
+  var mnSp=Math.min.apply(null,allSpreads),mxSp=Math.max.apply(null,allSpreads);
+  var mnAv=Math.min.apply(null,allAvgs),mxAv=Math.max.apply(null,allAvgs);
+  destRows.forEach(function(r){
+    r.normSpread=minMaxNorm(mnSp,mxSp,r.spread);
+    r.normAvg=minMaxNorm(mnAv,mxAv,r.avgDist);
+    r.finalScore=r.normSpread*0.6+r.normAvg*0.4;
+  });
+
+  /* 排序：综合分(距离均衡+平均里程)越小越优 */
+  destRows.sort(function(a,b){return a.finalScore-b.finalScore;});
+  var best=destRows[0];
+
+  showResult(origins,candidateDests,best,destRows,dests.length===0);
+}
+
+function showResult(origins,candidateDests,best,destRows,autoRec){
+  var rs=document.getElementById('result-section');
+  var cs=document.getElementById('compare-section');
+  rs.classList.remove('hidden');cs.classList.remove('hidden');
+
+  var badge=document.getElementById('result-badge');
+  badge.textContent=autoRec?'✨ 自动折中推荐':'✨ 最优方案';
+
+  // 保存当前出发城市（供候选切换使用）
+  curOrigins=origins.slice();
+
+  // 对比表：一行一个目的地，按综合分(均衡+成本)排序
+  var body=document.getElementById('compare-body');body.innerHTML='';
+  destRows.sort(function(a,b){return a.finalScore-b.finalScore});
+  var worst=destRows[destRows.length-1].finalScore;
+  destRows.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    if(i===0)tr.className='best-row';
+    var tag=(i===0)?'<span class="best-tag">最均衡</span>':'';
+    var pct=(worst>0&&r.finalScore<=worst)?Math.round(100-(r.finalScore/worst)*100):100;if(pct<0)pct=0;
+    // 该目的地对应的所有出发城市高铁里程
+    var legsTxt=r.legs.map(function(l){
+      return '<span style="color:#425466">'+l.origin+':'+fmtDist(l.dist)+'</span>';
+    }).join(' · ');
+    tr.innerHTML=
+      '<td><b>'+r.dest+'</b>'+tag+'<div class="meta" style="font-size:11px">里程均衡度 '+Math.round(r.spread)+'km</div></td>'+
+      '<td class="meta" style="min-width:180px">'+legsTxt+'</td>'+
+      '<td class="meta-b">'+fmtDist(Math.round(r.avgDist))+'</td>'+
+      '<td>'+fmtDur(Math.round(r.avgDur))+'</td>'+
+      '<td><b style="color:'+(i===0?'#635BFF':'#425466')+'">'+r.finalScore.toFixed(3)+'</b>'+
+        '<span class="score-bar"><span class="score-fill" style="width:'+pct+'%"></span></span></td>';
+    body.appendChild(tr);
+  });
+
+  // 渲染候选目的地（top3可点击切换）
+  var top3=destRows.slice(0,3);
+  renderCandList(top3);
+
+  // 展示当前候选（默认最优）
+  showCandDetail(best,true);
+
+  rs.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* 全局：当前出发城市 */
+var curOrigins=[];
+/* 全局：当前展示的目的地（用于天数变化时重渲染） */
+var curDest='';
+var curComboDests=null;
+
+/* 渲染候选目的地列表（top3） */
+function renderCandList(top3){
+  var list=document.getElementById('cand-list');
+  list.innerHTML='';
+  // 建立 dest -> row 的查找表（供点击切换使用）
+  curCandRows={};
+  top3.forEach(function(r){curCandRows[r.dest]=r;});
+  top3.forEach(function(r,idx){
+    var c=document.createElement('button');
+    c.className='cand'+(idx===0?' active':'');
+    c.setAttribute('data-dest',r.dest);
+    c.innerHTML=
+      '<span class="cand-name">'+r.dest+(idx===0?'<span class="cand-tag">最优</span>':'')+'</span>'+
+      '<span class="cand-theme">'+(destPOIs[r.dest]?destPOIs[r.dest].theme:'')+'</span>'+
+      '<span class="cand-meta">里程差≈'+Math.round(r.spread)+'km · 平均'+fmtDist(Math.round(r.avgDist))+'</span>';
+    c.addEventListener('click',function(){
+      // 高亮当前
+      document.querySelectorAll('.cand').forEach(function(x){x.classList.remove('active');});
+      c.classList.add('active');
+      // 用缓存的本行数据展示
+      if(curCandRows && curCandRows[r.dest]){
+        showCandDetail(curCandRows[r.dest],false);
+      }
+    });
+    list.appendChild(c);
+  });
+}
+
+/* 缓存：候选行查询表 */
+var curCandRows=null;
+
+/* 展示某候选目的地详情：指标卡 + 概览地图 + 行程 */
+function showCandDetail(row,isTop){
+  // isTop: 是否为最优（满标题）；否则更新为备选
+  // row 需含 dest/legs/avgDist/avgDur/spread/allSure
+  var destTheme=destPOIs[row.dest]?destPOIs[row.dest].theme:'';
+  document.getElementById('result-title').innerHTML=
+    '对 <b style="color:#635BFF">'+curOrigins.join('、')+'</b> 而言，目的地 <b style="color:#10B981">'+row.dest+'</b>'+(isTop?' 最折中':'');
+  document.getElementById('result-sub').textContent=
+    (destTheme?destTheme+' · ':'')+'按实际高铁里程折中：该目的地到各出发点的里程差异最小'+
+    (isTop?'，且整体里程适中':'') + '（仅以里程折算，不含票价）';
+
+  var perOrigin=row.legs.map(function(l){
+    return '<span style="color:#425466">'+l.origin+' '+fmtDist(l.dist)+'</span>';
+  }).join(' · ');
+  var distRange=fmtDist(Math.min.apply(null,row.legs.map(function(l){return l.dist})))+
+    ' ~ '+fmtDist(Math.max.apply(null,row.legs.map(function(l){return l.dist})));
+  document.getElementById('result-metrics').innerHTML=
+    '<div class="rm"><b>'+row.dest+'</b><span>'+(isTop?'推荐目的地':'备选目的地')+'</span></div>'+
+    '<div class="rm"><b>'+fmtDist(Math.round(row.avgDist))+'</b><span>平均高铁里程(单程)</span></div>'+
+    '<div class="rm"><b>'+distRange+'</b><span>各出发点里程范围</span></div>'+
+    '<div class="rm"><b>里程均衡 '+Math.round(row.spread)+'km</b><span>越小越均衡</span></div>'+
+    '<div class="rm" style="flex-direction:column;align-items:flex-start;gap:2px"><b style="font-size:13px">各出发点里程</b><span style="font-size:12px">'+perOrigin+'</span></div>';
+
+  // 概览地图 + 行程
+  renderOverviewMap(row);
+  renderDestItinerary(row.dest);
+}
+
+
+/* ============================================================
+   渲染目的地行程（左侧卡片 + 地图）
+   ============================================================ */
+function renderDestItinerary(dest){
+  var d=destPOIs[dest];
+  curDest=dest;
+  curComboDests=null; // 单目的地模式，清除综合线路状态
+  if(!d){
+    // 非内置库目的地：保留交通推荐，提示暂无该城行程数据
+    document.getElementById('day-hdr').innerHTML=
+      '<h2>'+dest+' · 交通推荐已生成</h2>'+
+      '<p class="theme">已为您算好前往 '+dest+' 的高铁方案，但尚未内置该城市的逐点行程</p>';
+    document.getElementById('tl-list').innerHTML=
+      '<div class="card" style="cursor:default;opacity:1;animation:none">'+
+        '<div class="card-m"><p class="p-desc" style="-webkit-line-clamp:unset">'+
+        '「'+dest+'」暂无内置一日游线路。<br>'+
+        '您已可选择该项目的地交通方案（见上方推荐结果）。如需该城市的详细行程，'+
+        '可在「出发城市」旁继续选择附近热门目的地，或告知我补充 '+dest+' 的行程数据。</p></div>'+
+      '</div>';
+    document.getElementById('day-total').innerHTML='<span>'+dest+' 交通推荐已完成</span><b>—</b>';
+    return;
+  }
+  // 更新日标题
+  var daysEl2=document.getElementById('days-input');
+  var daysN=daysEl2?parseInt(daysEl2.value,10)||1:1;
+  document.getElementById('day-hdr').innerHTML=
+    '<h2>'+dest+' · '+(d.theme||'一日游')+'</h2>'+
+    '<p class="theme">全程公共交通 · 分 '+daysN+' 天分段游览</p>'+
+    '<span class="day-budget">市内预算 '+fmtMoney(d.pois.reduce(function(s,p){return s+p.budget},0))+' · '+daysN+' 天</span>';
+  var legendBox=document.getElementById('legend');
+  legendBox.innerHTML='';
+  ['scenic','food','culture','shopping','transport'].forEach(function(k){
+    legendBox.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:'+cats[k].color+'"></span>'+cats[k].name+'</div>';
+  });
+  // 渲染地图 POI（即使地图异常也保证下方卡片正常渲染）
+  try{ renderMap(dest,d.pois,d.theme); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(d.pois[0].lat,d.pois[0].lng)); }catch(e2){} }
+  // 读取天数并按天分段渲染卡片
+  var daysEl=document.getElementById('days-input');
+  var days=daysEl?parseInt(daysEl.value,10)||1:1;
+  renderCards(d.pois, days);
+  document.getElementById('day-total').innerHTML=
+    '<span>'+dest+' 共 '+d.pois.length+' 个核心点位 · 分 '+days+' 天游览</span><b>'+fmtMoney(d.pois.reduce(function(s,p){return s+p.budget},0))+'</b>';
+}
+
+/* ============================================================
+   地图渲染（多目的地可切换）
+   ============================================================ */
+function initMap(){
+  map=new TMap.Map('map',{center:new TMap.LatLng(30.755,120.755),zoom:13});
+  try{
+    infoWin=new TMap.InfoWindow({map:map,position:new TMap.LatLng(30.755,120.755),offset:{x:0,y:-48},content:''});
+    infoWin.close();
+  }catch(e){infoWin=null}
+  // 默认渲染嘉兴
+  renderDestItinerary('嘉兴');
+}
+
+/* ============================================================
+   折中概览地图：标注各出发点 + 推荐目的地，并连线
+   ============================================================ */
+function renderOverviewMap(best){
+  var el=document.getElementById('overview-map');
+  if(!el)return;
+  if(typeof TMap==='undefined')return;
+
+  // 收集所有折点：出发点(蓝) + 推荐目的地(紫)
+  var originPts=[],destPt=null;
+  best.legs.forEach(function(l){
+    var oc=cityCoord[l.origin]||cityCoord[l.origin.replace(/市$/,'')];
+    if(oc){
+      originPts.push({name:l.origin,lat:oc[0],lng:oc[1],dist:l.dist});
+    }
+  });
+  var dc=destCoord[best.dest]||destCoord[best.dest.replace(/市$/,'')];
+  var dc2=cityCoord[best.dest]||cityCoord[best.dest.replace(/市$/,'')];
+  var dcoord=dc||dc2;
+  if(dcoord)destPt={name:best.dest,lat:dcoord[0],lng:dcoord[1]};
+
+  // 无坐标则无法画图
+  if(originPts.length===0&&!destPt){el.innerHTML='<div style="padding:20px;text-align:center;color:#697386;font-size:12px">部分城市缺少坐标，暂无法绘制概览图</div>';return;}
+
+  // 清理旧图层
+  if(ovMarker){try{ovMarker.setMap(null)}catch(e){}ovMarker=null}
+  if(ovPolyline){try{ovPolyline.setMap(null)}catch(e){}ovPolyline=null}
+
+  // 初始化概览图（懒创建，保留视野）
+  if(!ovMap){
+    var all=[].concat(originPts,destPt?[destPt]:[]);
+    ovMap=new TMap.Map(el,{center:new TMap.LatLng((all.reduce(function(s,p){return s+p.lat},0)/all.length),(all.reduce(function(s,p){return s+p.lng},0)/all.length)),zoom:6});
+  }
+
+  // 样式：出发点=蓝圆, 目的地=紫pin
+  var styles={};
+  originPts.forEach(function(p,i){
+    styles['o'+i]=new TMap.MarkerStyle({width:30,height:30,anchor:{x:15,y:15},src:mkDot('#3B82F6')});
+  });
+  if(destPt)styles['d']=new TMap.MarkerStyle({width:38,height:50,anchor:{x:19,y:48},src:mkPinStar('#635BFF')});
+
+  // 几何：city name 通过独立 MultiLabel 显示，marker 只负责点位与点击
+  var geos=[];
+  originPts.forEach(function(p,i){
+    geos.push({id:'o'+i,styleId:'o'+i,position:new TMap.LatLng(p.lat,p.lng),
+      properties:{name:p.name,price:p.price}});
+  });
+  if(destPt)geos.push({id:'d',styleId:'d',position:new TMap.LatLng(destPt.lat,destPt.lng),
+    properties:{name:destPt.name}});
+
+  ovMarker=new TMap.MultiMarker({map:ovMap,styles:styles,geometries:geos});
+  ovMarker.on('click',function(evt){
+    if(evt.geometry&&evt.geometry.properties){
+      var nm=evt.geometry.properties.name;
+      var d=evt.geometry.properties.dist;
+      var content='<div style="padding:4px 8px;font-family:sans-serif;font-size:13px;font-weight:600;color:#1a1f36">'+
+        nm+(d!==undefined?' · '+fmtDist(d):'（推荐目的地）')+'</div>';
+      new TMap.InfoWindow({map:ovMap,position:evt.geometry.position,offset:{x:0,y:-28},content:content,enableCustom:false}).open();
+    }
+  });
+
+  // 城市名标签（独立 MultiLabel 图层，标在 marker 上方）
+  if(ovLabel){try{ovLabel.setMap(null)}catch(e){}ovLabel=null}
+  var labelStyles={
+    'origin':new TMap.LabelStyle({color:'#1a1f36',size:13,backgroundColor:'rgba(255,255,255,.92)',padding:'2px 4px',borderRadius:4,borderColor:'rgba(99,91,255,.3)',borderWidth:1}),
+    'dest':new TMap.LabelStyle({color:'#7C3AED',size:15,backgroundColor:'rgba(99,91,255,.12)',padding:'2px 6px',borderRadius:4,borderColor:'#635BFF',borderWidth:1.5})
+  };
+  var labelGeos=[];
+  originPts.forEach(function(p,i){
+    labelGeos.push({id:'lo'+i,styleId:'origin',position:new TMap.LatLng(p.lat,p.lng),content:p.name,offset:{x:0,y:-18}});
+  });
+  if(destPt)labelGeos.push({id:'ld',styleId:'dest',position:new TMap.LatLng(destPt.lat,destPt.lng),content:'★'+destPt.name,offset:{x:0,y:-24},rank:10});
+  ovLabel=new TMap.MultiLabel({map:ovMap,styles:labelStyles,geometries:labelGeos});
+
+  // 连线：每个出发点 → 推荐目的地
+  if(destPt&&originPts.length>0){
+    var destLatLng=new TMap.LatLng(destPt.lat,destPt.lng);
+    var paths=originPts.map(function(p){return [new TMap.LatLng(p.lat,p.lng),destLatLng];});
+    ovPolyline=new TMap.MultiPolyline({
+      map:ovMap,
+      styles:{
+        'route':new TMap.PolylineStyle({color:'rgba(255,77,79,.85)',width:3,borderWidth:1,borderColor:'rgba(255,255,255,.7)',lineCap:'round',dashArray:[8,6]}),
+        'destStar':new TMap.PolylineStyle({color:'#10B981',width:3,lineCap:'round'})
+      },
+      geometries:paths.map(function(pth,i){
+        return {id:'r'+i,styleId:'route',paths:pth};
+      })
+    });
+  }
+
+  // 自适应视野（含全部点）
+  var allPts=[].concat(originPts,destPt?[destPt]:[]);
+  if(allPts.length>0){
+    var mnLat=Math.min.apply(null,allPts.map(function(p){return p.lat})),mxLat=Math.max.apply(null,allPts.map(function(p){return p.lat}));
+    var mnLng=Math.min.apply(null,allPts.map(function(p){return p.lng})),mxLng=Math.max.apply(null,allPts.map(function(p){return p.lng}));
+    try{
+      var b=new TMap.LatLngBounds(new TMap.LatLng(mnLat,mnLng),new TMap.LatLng(mxLat,mxLng));
+      ovMap.fitBounds(b,{padding:60});
+      var span=Math.max(mxLat-mnLat,mxLng-mnLng);
+      if(span>0.1&&ovMap.getZoom()>14)ovMap.setZoom(14);
+    }catch(e){}
+  }
+
+  // 图例说明
+  document.getElementById('overview-cap').textContent=
+    '蓝色=各出发点 · 紫色★=推荐目的地 · 红色虚线=乘车连线';
+}
+
+/* 生成：蓝色小圆点(出发点标记) */
+function mkDot(color){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">'+
+    '<circle cx="15" cy="15" r="12" fill="'+color+'" stroke="#fff" stroke-width="2.5"/></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+/* 生成：紫色带星 pin(目的地标记) */
+function mkPinStar(color){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="38" height="50" viewBox="0 0 38 50">'+
+    '<path d="M19 0C8.6 0 0 8.6 0 19c0 14.25 19 31 19 31s19-16.75 19-31C38 8.6 29.4 0 19 0z" fill="'+color+'" stroke="#fff" stroke-width="2"/>'+
+    '<path d="M19 8l3.1 6.3 6.9 1-5 4.9 1.2 6.8L19 24l-6.2 3.2 1.2-6.8-5-4.9 6.9-1z" fill="#fff"/>'+
+    '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+function renderMap(dest,pois,theme){
+  if(typeof TMap==='undefined')return;
+  if(marker){try{marker.setMap(null)}catch(e){}marker=null}
+  if(polyline){try{polyline.setMap(null)}catch(e){}polyline=null}
+  if(infoWin){try{infoWin.close()}catch(e){}}
+  if(!pois||pois.length===0)return;
+
+  var styles={};
+  pois.forEach(function(p,i){
+    var c=cats[p.cat].color;
+    styles['m'+i]=new TMap.MarkerStyle({width:36,height:48,anchor:{x:18,y:48},src:mkIcon(i+1,c)});
+  });
+  var geos=pois.map(function(p,i){
+    if(!p.lat||!p.lng)return null;
+    return{id:'p'+i,styleId:'m'+i,position:new TMap.LatLng(p.lat,p.lng),properties:{index:i}};
+  }).filter(Boolean);
+  if(geos.length===0)return;
+  marker=new TMap.MultiMarker({map:map,styles:styles,geometries:geos});
+  marker.on('click',function(evt){
+    if(evt.geometry&&evt.geometry.properties){var idx=evt.geometry.properties.index;flyTo(pois,idx);hlCard(idx);}
+  });
+  var paths=geos.map(function(g){return g.position});
+  polyline=new TMap.MultiPolyline({
+    map:map,
+    styles:{'r':new TMap.PolylineStyle({color:'rgba(255,77,79,.85)',width:4,borderWidth:2,borderColor:'#fff',lineCap:'round',dashArray:[0,0]})},
+    geometries:[{id:'route',styleId:'r',paths:paths}]
+  });
+  fitBounds(pois);
+}
+function renderCards(pois, days){
+  days=days||1;
+  var box=document.getElementById('tl-list');box.innerHTML='';
+
+  /* 严格按天数生成 DAY 分段（即使某天 POI 用完也显示，标"自由活动"） */
+  var total=pois.length;
+  // 对无坐标 POI，仍保留其位置（卡片与地图都用"原列表下标"统一编号）
+  var segments=[];
+  for(var s=0;s<days;s++){
+    var list=[];
+    // 平均分配：基础每段 perDay 个，剩余余数均匀补到前几段
+    var per=Math.floor(total/days);
+    var rem=total%days;
+    var start=s*per + Math.min(s,rem);
+    var cnt=per + (s<rem?1:0);
+    for(var k=start;k<start+cnt && k<total;k++){
+      list.push(pois[k]);
+    }
+    segments.push({day:s+1,list:list,totalSeg:cnt});
+  }
+
+  var globalIdx=0; // 用于动画延迟（仅视觉，不影响 index）
+  segments.forEach(function(seg){
+    // 该天是否有实际点位
+    var hasPois=seg.list.length>0;
+    var segBudget=seg.list.reduce(function(s,p){return s+(p.budget||0)},0);
+    // DAY 分段头
+    var dh=document.createElement('div');
+    dh.className='seg-head';
+    dh.innerHTML='<span class="seg-day">DAY '+seg.day+'</span><span class="seg-meta">'+
+      (hasPois?(seg.list.length+' 个点位 · 预算 '+fmtMoney(segBudget)):'自由活动 / 机动时间')+
+      '</span>';
+    box.appendChild(dh);
+
+    // 该天无点位 → 显示"自由活动"占位卡
+    if(!hasPois){
+      var ph=document.createElement('div');
+      ph.className='card free-day';ph.style.setProperty('--cc','#c4cbd6');
+      ph.innerHTML=
+        '<div class="card-l"><div class="t-badge">全天</div><div class="t-sub">机动</div><div class="t-dot"></div></div>'+
+        '<div class="card-m">'+
+          '<div class="card-top"><span class="cat-tag" style="background:rgba(150,160,175,.1);color:#6b7280">自由</span><span class="p-name">自由活动</span></div>'+
+          '<p class="p-desc">当日行程已排满提前完成，可自由安排、休整或前往周边小众景点。</p>'+
+        '</div>';
+      box.appendChild(ph);
+      return; // 该天无卡片，跳过
+    }
+
+    seg.list.forEach(function(p){
+      // 复用原始 pois 下标作为 index（与地图 marker 的 properties.index 完全一致）
+      var origIdx=pois.indexOf(p);
+      if(origIdx<0){return;}
+      var c=cats[p.cat];
+      var el=document.createElement('div');
+      el.className='card';el.style.setProperty('--cc',c.color);
+      el.style.animationDelay=(globalIdx*60)+'ms';el.dataset.index=origIdx;
+      // 序号与地图 marker 数字一致（1 起）
+      var seq=origIdx+1;
+      el.innerHTML=
+        '<span class="goto">📍 地图定位</span>'+
+        '<div class="card-l"><div class="t-badge">'+p.time+'</div><div class="t-sub">'+c.name+'</div><div class="t-dot"></div></div>'+
+        '<div class="card-m">'+
+          '<div class="card-top"><span class="seq-num">'+seq+'</span><span class="cat-tag" style="background:'+c.bg+';color:'+c.color+'">'+c.name+'</span><span class="p-name">'+p.name+'</span></div>'+
+          (p.transit?'<div class="transit-line">🚌 '+p.transit+'</div>':'')+
+          (p.desc?'<p class="p-desc">'+p.desc+'</p>':'')+
+          '<div class="card-bot">'+
+            '<span class="chip-line"><span class="ico">⏱</span>约 '+p.dur+'</span>'+
+            '<span class="chip-line budget"><span class="ico">'+(p.budget>0?'¥':'💳')+'</span>'+(p.budget>0?Math.round(p.budget):'免费')+'</span>'+
+            (p.addr?'<span class="chip-line"><span class="ico">📍</span>'+p.addr+'</span>':'')+
+          '</div>'+
+        '</div>';
+      // 点击：用原始下标跳地图 + 高亮卡片
+      el.addEventListener('click',function(){flyTo(pois,origIdx);hlCard(origIdx);});
+      box.appendChild(el);
+      globalIdx++;
+    });
+  });
+  activeIdx=-1;
+}
+function flyTo(pois,idx){
+  var p=pois[idx],c=cats[p.cat],tgt=new TMap.LatLng(p.lat,p.lng);
+  if(infoWin&&p.desc){
+    try{
+      infoWin.setPosition(tgt);
+      var descShort=p.desc.length>70?p.desc.substring(0,70)+'…':p.desc;
+      infoWin.setContent(
+        '<div style="width:240px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;border-radius:10px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.12)">'+
+          '<div style="height:5px;background:linear-gradient(90deg,'+c.color+',transparent)"></div>'+
+          '<div style="padding:9px 12px">'+
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'+
+              '<span style="display:inline-block;padding:2px 9px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.3px;background:'+c.bg+';color:'+c.color+'">'+c.name+'</span>'+
+              '<span style="font-size:11px;color:#697386;font-weight:600">'+p.time+'</span></div>'+
+            '<div style="font-size:15px;font-weight:800;color:#1a1f36;margin-bottom:5px;letter-spacing:-.2px">'+p.name+'</div>'+
+            (p.transit?'<div style="font-size:11px;color:#2563EB;margin-bottom:5px;font-weight:600">🚌 '+p.transit+'</div>':'')+
+            '<div style="font-size:12px;color:#425466;line-height:1.45">'+descShort+'</div>'+
+            '<div style="display:flex;gap:10px;margin-top:7px;font-size:11px;color:#697386;font-weight:600">'+
+              '<span>⏱ 约 '+p.dur+'</span><span>'+((p.budget>0)?'¥'+p.budget:'免费')+'</span>'+
+              (p.addr?'<span style="opacity:.7">📍'+p.addr+'</span>':'')+
+            '</div>'+
+          '</div>'+
+        '</div>');
+      infoWin.open();
+    }catch(e){}
+  }
+  try{
+    if(typeof map.easeTo==='function')map.easeTo({center:tgt,zoom:15},{duration:650});
+    else{map.panTo(tgt);if(map.getZoom()<14)map.setZoom(15);}
+  }catch(e){try{map.setCenter(tgt);map.setZoom(15)}catch(e2){}}
+  activeIdx=idx;
+}
+function hlCard(idx){
+  document.querySelectorAll('.card').forEach(function(c,i){c.classList.toggle('active',i===idx)});
+  var card=document.querySelector('.card[data-index="'+idx+'"]');
+  if(card){try{card.scrollIntoView({behavior:'smooth',block:'center'})}catch(e){}}
+}
+function fitBounds(poisArr){
+  var valid=poisArr.filter(function(p){return p.lat&&p.lng});
+  var minLat=Infinity,maxLat=-Infinity,minLng=Infinity,maxLng=-Infinity;
+  valid.forEach(function(p){
+    if(p.lat<minLat)minLat=p.lat;if(p.lat>maxLat)maxLat=p.lat;
+    if(p.lng<minLng)minLng=p.lng;if(p.lng>maxLng)maxLng=p.lng;
+  });
+  if(!isFinite(minLat))return;
+  try{
+    var b=new TMap.LatLngBounds(new TMap.LatLng(minLat,minLng),new TMap.LatLng(maxLat,maxLng));
+    map.fitBounds(b,{padding:80});
+    var span=Math.max(maxLat-minLat,maxLng-minLng);
+    if(span>0.15&&map.getZoom()<11)map.setZoom(11);
+  }catch(e){
+    map.setCenter(new TMap.LatLng((minLat+maxLat)/2,(minLng+maxLng)/2));map.setZoom(12);
+  }
+}
+function mkIcon(num,color){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">'+
+    '<defs><filter id="f'+num+'" x="-50%" y="-50%" width="200%" height="200%">'+
+    '<feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,0.25)"/></filter></defs>'+
+    '<path d="M18 0C8.06 0 0 8.06 0 18c0 13.5 18 30 18 30s18-16.5 18-30c0-9.94-8.06-18-18-18z" fill="'+color+'" filter="url(#f'+num+')"/>'+
+    '<circle cx="18" cy="18" r="14" fill="#fff"/>'+
+    '<text x="18" y="24" text-anchor="middle" fill="'+color+'" font-family="Arial,sans-serif" font-size="16" font-weight="700">'+num+'</text></svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+
+/* ============================================================
+   事件绑定
+   ============================================================ */
+document.getElementById('add-origin').addEventListener('click',function(){addField('origin-fields','add-origin','origin-input','输入出发城市',4);});
+document.getElementById('add-dest').addEventListener('click',function(){addField('dest-fields','add-dest','dest-input','输入目的地',4);});
+document.getElementById('calc-btn').addEventListener('click',calculate);
+document.getElementById('confirm-dest').addEventListener('click',confirmDest);
+
+// 天数变化时重新渲染当前行程（按新天数分段）
+var daysSel=document.getElementById('days-input');
+if(daysSel)daysSel.addEventListener('change',function(){
+  if(curComboDests&&curComboDests.length>=2){
+    renderComboItinerary(curComboDests);
+  }else if(curDest){
+    renderDestItinerary(curDest);
+  }
+});
+
+// 方案对比折叠/展开
+var cmpToggle=document.getElementById('cmp-toggle');
+var cmpBody=document.getElementById('cmp-body');
+var cmpArrow=document.getElementById('cmp-arrow');
+if(cmpToggle&&cmpBody){
+  cmpToggle.addEventListener('click',function(){
+    var collapsed=cmpBody.classList.toggle('collapsed');
+    cmpArrow.textContent=collapsed?'▸ 展开':'▾ 收起';
+  });
+}
+
+document.querySelectorAll('.chip').forEach(function(ch){
+  ch.addEventListener('click',function(){
+    var kind=this.dataset.kind,val=this.dataset.val;
+    var cls=kind==='origin'?'origin-input':'dest-input';
+    var input=document.querySelector('.'+cls);
+    if(input)input.value=val;
+    else addField(kind==='origin'?'origin-fields':'dest-fields',kind==='origin'?'add-origin':'add-dest',cls,val,4);
+    // 点击后自动计算
+    calculate();
+  });
+});
+
+/* ===== 启动 ===== */
+updateAddBtns();
+(function check(){
+  if(typeof TMap!=='undefined'&&TMap.Map){initMap();}
+  else{setTimeout(check,50);}
+})();
+</script>
+</body>
+</html>
+
+
+
