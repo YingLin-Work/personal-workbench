@@ -1670,9 +1670,32 @@ function renderMap(dest,pois,theme){
   });
   fitBounds(pois);
 }
+/* ============ 每日时间轴重算：一天按完整24小时，各天独立从上午开始 ============ */
+function parseDurMin(s){ /* "2h"/"1.5h"/"到达" → 分钟 */
+  if(!s)return 60;
+  var m=String(s).match(/^(\d+(?:\.\d+)?)\s*h/i);
+  if(m)return Math.round(parseFloat(m[1])*60);
+  return 30;
+}
+function fmtHM(min){ /* 分钟 → "HH:MM" */
+  min=Math.max(0,Math.round(min));
+  var h=Math.floor(min/60),m=min%60;
+  return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+}
+/* 为一天的 POI 列表生成连续时刻（09:00 起，时长+30min 转场） */
+function scheduleDay(list){
+  var cur=9*60; /* 09:00 出发 */
+  list.forEach(function(p){
+    p.dispTime=fmtHM(cur);
+    cur+=parseDurMin(p.dur)+30; /* 游玩时长 + 30 分钟交通转场 */
+  });
+}
 function renderCards(pois, days){
   days=days||1;
   var box=document.getElementById('tl-list');box.innerHTML='';
+
+  /* 清除上次渲染的临时时刻，避免残留 */
+  pois.forEach(function(p){delete p.dispTime;});
 
   /* 严格按天数生成 DAY 分段（即使某天 POI 用完也显示，标"自由活动"） */
   var total=pois.length;
@@ -1688,6 +1711,8 @@ function renderCards(pois, days){
     for(var k=start;k<start+cnt && k<total;k++){
       list.push(pois[k]);
     }
+    // 每天独立重算时间轴（09:00 起，24 小时制）
+    if(list.length>0)scheduleDay(list);
     segments.push({day:s+1,list:list,totalSeg:cnt});
   }
 
@@ -1730,7 +1755,7 @@ function renderCards(pois, days){
       var seq=origIdx+1;
       el.innerHTML=
         '<span class="goto">📍 地图定位</span>'+
-        '<div class="card-l"><div class="t-badge">'+p.time+'</div><div class="t-sub">'+c.name+'</div><div class="t-dot"></div></div>'+
+        '<div class="card-l"><div class="t-badge">'+(p.dispTime||p.time)+'</div><div class="t-sub">'+c.name+'</div><div class="t-dot"></div></div>'+
         '<div class="card-m">'+
           '<div class="card-top"><span class="seq-num">'+seq+'</span><span class="cat-tag" style="background:'+c.bg+';color:'+c.color+'">'+c.name+'</span><span class="p-name">'+p.name+'</span></div>'+
           (p.transit?'<div class="transit-line">🚌 '+p.transit+'</div>':'')+
@@ -1761,7 +1786,7 @@ function flyTo(pois,idx){
           '<div style="padding:9px 12px">'+
             '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'+
               '<span style="display:inline-block;padding:2px 9px;border-radius:100px;font-size:10px;font-weight:700;letter-spacing:.3px;background:'+c.bg+';color:'+c.color+'">'+c.name+'</span>'+
-              '<span style="font-size:11px;color:#697386;font-weight:600">'+p.time+'</span></div>'+
+              '<span style="font-size:11px;color:#697386;font-weight:600">'+(p.dispTime||p.time)+'</span></div>'+
             '<div style="font-size:15px;font-weight:800;color:#1a1f36;margin-bottom:5px;letter-spacing:-.2px">'+p.name+'</div>'+
             (p.transit?'<div style="font-size:11px;color:#2563EB;margin-bottom:5px;font-weight:600">🚌 '+p.transit+'</div>':'')+
             '<div style="font-size:12px;color:#425466;line-height:1.45">'+descShort+'</div>'+
