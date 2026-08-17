@@ -112,11 +112,12 @@ tbody tr.best-row{background:rgba(99,91,255,.05)}
 .tl-panel::-webkit-scrollbar{width:6px}
 .tl-panel::-webkit-scrollbar-track{background:transparent}
 .tl-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.day-hdr{margin-bottom:16px}
+.tl-sticky-hdr{position:sticky;top:0;z-index:20;background:var(--bg);padding:4px 0 6px;margin-bottom:0;border-bottom:1px solid var(--border);box-shadow:0 2px 8px -4px rgba(0,0,0,.08)}
+.day-hdr{margin-bottom:6px}
 .day-hdr h2{font-size:22px;font-weight:700;letter-spacing:-.5px}
 .day-hdr .theme{font-size:14px;color:var(--muted);margin-top:2px}
-.day-budget{display:inline-block;margin-top:8px;padding:4px 14px;background:rgba(99,91,255,.08);color:#635BFF;border-radius:100px;font-size:13px;font-weight:700}
-.legend{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.day-budget{display:inline-block;margin-top:6px;padding:4px 14px;background:rgba(99,91,255,.08);color:#635BFF;border-radius:100px;font-size:13px;font-weight:700}
+.legend{display:flex;gap:14px;margin-bottom:0;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:600}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .tl-list{display:flex;flex-direction:column;gap:7px;position:relative}
@@ -217,6 +218,11 @@ tbody tr.best-row{background:rgba(99,91,255,.05)}
   .seg-head{padding:5px 10px}
   .seg-day{font-size:11px}
   .seg-meta{font-size:9px}
+  .day-hdr h2{font-size:18px}
+  .day-hdr .theme{font-size:12px}
+  .day-budget{font-size:11px;padding:3px 10px;margin-top:4px}
+  .legend{gap:10px}
+  .legend-item{font-size:10px}
 }
 @media(max-width:480px){
   .banner{padding:18px 14px}.banner h1{font-size:20px}
@@ -382,13 +388,15 @@ tbody tr.best-row{background:rgba(99,91,255,.05)}
 
 <main class="main">
   <aside class="tl-panel">
-    <div class="day-hdr" id="day-hdr"></div>
-    <div class="legend" id="legend">
-      <div class="legend-item"><span class="legend-dot" style="background:#635BFF"></span>景点</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#FF6B6B"></span>美食</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#00B8A9"></span>文化</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>购物</div>
-      <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span>交通</div>
+    <div class="tl-sticky-hdr">
+      <div class="day-hdr" id="day-hdr"></div>
+      <div class="legend" id="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#635BFF"></span>景点</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#FF6B6B"></span>美食</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#00B8A9"></span>文化</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>购物</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span>交通</div>
+      </div>
     </div>
     <div class="tl-list" id="tl-list"></div>
     <div class="day-total" id="day-total"></div>
