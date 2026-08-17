@@ -1703,6 +1703,16 @@ function orderByRoute(list,anchor){
   return out;
 }
 var hotelCat={name:"住宿",color:"#8B5CF6",bg:"rgba(139,92,246,.1)"};
+var freeCat={name:"自由",color:"#0EA5E9",bg:"rgba(14,165,233,.1)"};
+/* 自由安排推荐模板（库内景点不足时按天轮换补齐） */
+var freeTpl=[
+  {name:"老城街巷自由漫步",dur:"2h",desc:"上午在老城街巷随意漫步，探访本地生活气息，途中顺访小巷咖啡馆与老字号，节奏轻松随性。"},
+  {name:"城市博物馆 / 美术馆",dur:"2h",desc:"深度参观城市博物馆或美术馆，了解当地历史文化。多数场馆周一闭馆，建议提前查询开放时间并预约。"},
+  {name:"本地市集 / 特色商圈",dur:"1.5h",desc:"逛本地市集或特色商圈，挑选伴手礼，感受城市烟火气，累了就地找家茶馆或咖啡馆小坐。"},
+  {name:"滨水绿道 / 城市公园",dur:"1.5h",desc:"沿滨水绿道或城市公园休闲漫步，适合拍照与放松，也是本地人最爱的休憩地。"},
+  {name:"夜市 / 地标夜景",dur:"2h",desc:"傍晚前往夜市或地标夜景，品尝街头小吃，为当天行程收尾。"},
+  {name:"近郊半日游",dur:"3h",desc:"前往近郊景点半日往返，可在高铁站/客运站查询班次，注意预留充足返程时间。"}
+];
 function renderCards(pois, days){
   days=days||1;
   var box=document.getElementById('tl-list');box.innerHTML='';
@@ -1720,10 +1730,12 @@ function renderCards(pois, days){
   });
   var totalSights=groups.reduce(function(s,g){return s+g.sights.length},0);
 
-  /* 每天景点目标 3-4 个；不足则均分（可少于3），超出上限时为覆盖全部放宽 */
-  var per=Math.ceil(totalSights/days);
-  per=Math.max(3,Math.min(4,per));
-  while(per*days<totalSights)per++;
+  /* 均衡分天：总景点平铺到每一天（保证每天节奏一致），不足 3 个/天的用"自由安排"补齐 */
+  var shares=[];
+  {
+    var base=Math.floor(totalSights/days), rem=totalSights%days;
+    for(var si=0;si<days;si++)shares.push(base+(si<rem?1:0));
+  }
 
   /* 展平为队列原子：tr（交通）/sight（景点），保留城市分组边界 */
   var queue=[];
@@ -1733,16 +1745,21 @@ function renderCards(pois, days){
   });
   var usedFood={}; /* 已用作午餐的美食 POI 下标 */
   var anchor=null; /* 前一天最后位置，作为次日排序起点 */
+  var freeIdx=0; /* 自由安排模板轮换指针 */
   var segments=[];
 
   for(var s=0;s<days;s++){
     var atoms=[],cnt=0;
-    while(cnt<per&&queue.length){
+    while(cnt<shares[s]&&queue.length){
       var a=queue.shift();
       atoms.push(a);
       if(a.type==='sight')cnt++;
     }
-    var hasPois=atoms.some(function(a){return a.type==='sight'});
+    var nReal=atoms.filter(function(x){return x.type==='sight'}).length;
+    /* 真实景点不足 3 个的天，用"自由安排"推荐卡补齐，保证每天有完整行程 */
+    var fillers=[];
+    for(var fj=0;fj<Math.max(0,3-nReal)&&freeIdx<freeTpl.length;fj++)fillers.push(freeTpl[freeIdx++]);
+    var hasPois=nReal>0||fillers.length>0;
     var items=[]; /* {p,kind,t} kind: tr/sight/lunch/hotel */
     if(hasPois){
       var curT=9*60,prev=anchor,lunchDone=false;
@@ -1786,6 +1803,32 @@ function renderCards(pois, days){
           prev=p;
         });
       }
+      /* 自由安排推荐卡（库内景点不足时补齐，排在真实景点之后） */
+      /* 夜市/夜景类放到当天最后；当天时间过晚则不再追加 */
+      fillers.sort(function(a,b){return (a.name.indexOf('夜市')>=0?1:0)-(b.name.indexOf('夜市')>=0?1:0);});
+      fillers.forEach(function(tp){
+        if(curT>17*60+30)return; /* 17:30 后不再安排新项目 */
+        var tt=30;
+        if(!lunchDone&&curT+tt>=11*60+40){
+          var lt=curT+Math.min(tt,20);
+          var bestF=null,bdF=Infinity;
+          pois.forEach(function(f){
+            if(f.cat!=='food'||usedFood[pois.indexOf(f)])return;
+            var d=transitMin(prev,f);if(d<bdF){bdF=d;bestF=f;}
+          });
+          var bfI=bestF?pois.indexOf(bestF):-1;
+          if(bestF&&bfI>=0){
+            usedFood[bfI]=1;bestF.dispTime=fmtHM(lt);
+            items.push({p:bestF,kind:'lunch'});
+          }else{
+            items.push({p:{name:((prev&&prev.name)?prev.name.replace(/·.*/,''):'市区')+' 附近 · 就近用餐',cat:'food',dur:'1h',synthetic:true},kind:'lunch',t:fmtHM(lt)});
+          }
+          curT=lt+60;lunchDone=true;
+        }
+        curT+=tt;
+        items.push({p:{name:tp.name,cat:'free',dur:tp.dur,synthetic:true,desc:tp.desc},kind:'free',t:fmtHM(curT)});
+        curT+=parseDurMin(tp.dur)+15;
+      });
       /* 兜底午餐（当天结束早于午餐窗口） */
       if(!lunchDone){
         var lt2=Math.max(curT,11*60+30);
@@ -1809,7 +1852,7 @@ function renderCards(pois, days){
       items.push({p:{name:hn,cat:'hotel',dur:'休整',synthetic:true,anchor:prev},kind:'hotel',t:fmtHM(ht)});
       anchor=prev;
     }
-    segments.push({day:s+1,items:items,hasPois:hasPois,nSight:atoms.filter(function(a){return a.type==='sight'}).length});
+    segments.push({day:s+1,items:items,hasPois:hasPois,nSight:nReal,nFree:fillers.length});
   }
 
   var globalIdx=0; // 用于动画延迟（仅视觉，不影响 index）
@@ -1819,7 +1862,7 @@ function renderCards(pois, days){
     var dh=document.createElement('div');
     dh.className='seg-head';
     dh.innerHTML='<span class="seg-day">DAY '+seg.day+'</span><span class="seg-meta">'+
-      (seg.hasPois?(seg.nSight+' 个景点 · 含午餐/住宿推荐 · 预算 '+fmtMoney(segBudget)):'自由活动 / 机动时间')+
+      (seg.hasPois?(seg.nSight+' 个景点'+(seg.nFree?' + '+seg.nFree+' 项自由安排':'')+' · 含午餐/住宿推荐 · 预算 '+fmtMoney(segBudget)):'自由活动 / 机动时间')+
       '</span>';
     box.appendChild(dh);
 
@@ -1840,14 +1883,14 @@ function renderCards(pois, days){
     seg.items.forEach(function(it){
       var p=it.p;
       var isSyn=!!p.synthetic;
-      var c=(p.cat==='hotel')?hotelCat:(cats[p.cat]||cats.scenic);
+      var c=(p.cat==='hotel')?hotelCat:(p.cat==='free'?freeCat:(cats[p.cat]||cats.scenic));
       var origIdx=isSyn?-1:pois.indexOf(p);
       var el=document.createElement('div');
       el.className='card';el.style.setProperty('--cc',c.color);
       if(isSyn)el.style.border='1.5px dashed '+c.color+'66'; /* 推荐卡虚线边框 */
       el.style.animationDelay=(globalIdx*60)+'ms';
       var timeStr=isSyn?(it.t||'--'):(p.dispTime||p.time);
-      var kindName=(it.kind==='lunch')?'午餐':(it.kind==='hotel')?'住宿':c.name;
+      var kindName=(it.kind==='lunch')?'午餐':(it.kind==='hotel')?'住宿':(it.kind==='free'?'自由':c.name);
       var desc=p.desc;
       if(isSyn&&it.kind==='lunch')desc='午餐时段，就近选择老字号或商场餐饮层，用餐约 1 小时，饭后稍作休整再出发。';
       if(isSyn&&it.kind==='hotel')desc='当日行程集中于此区域，推荐就近入住，省去往返交通。周边餐饮配套通常也较完善，次日出发更从容。';
