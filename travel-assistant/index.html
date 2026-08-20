@@ -1959,6 +1959,18 @@ function orderByRoute(list,anchor){
   }
   return out;
 }
+/* 判断是否为夜间活动 POI（原 time≥16:30 或名称含夜游/夜景等关键词），用于排序和时间下限 */
+function isNightPOI(p){
+  if(!p)return false;
+  if(p.time){
+    var hm=String(p.time).split(':');
+    var min=parseInt(hm[0],10)*60+parseInt(hm[1]||'0',10);
+    if(min>=16*60+30)return true;  /* 原始时间≥16:30 → 夜间 */
+    return false;                   /* 有明确白天时间 → 非夜间 */
+  }
+  var t=(p.name||'')+(p.desc||'');
+  return /夜市|夜游|夜景|灯光秀|夜色/.test(t);
+}
 var hotelCat={name:"住宿",color:"#8B5CF6",bg:"rgba(139,92,246,.1)"};
 var freeCat={name:"自由",color:"#0EA5E9",bg:"rgba(14,165,233,.1)"};
 /* 自由安排推荐模板（库内景点不足时按天轮换补齐） */
@@ -2035,10 +2047,14 @@ function renderCards(pois, days){
         var run=[];
         while(i<atoms.length&&atoms[i].type==='sight'){run.push(atoms[i].p);i++;}
         run=orderByRoute(run,prev);
+        /* 夜间 POI 稳定排到当天景点段末尾，避免早上安排夜游/夜市 */
+        run=run.map(function(p,idx){return {p:p,n:isNightPOI(p),idx:idx};})
+              .sort(function(a,b){if(a.n!==b.n)return a.n?1:-1;return a.idx-b.idx;})
+              .map(function(x){return x.p;});
         run.forEach(function(p){
           var tt=transitMin(prev,p);
-          /* 午餐窗口 11:40-13:00：先插午餐再进景点 */
-          if(!lunchDone&&curT+tt>=11*60+40){
+          /* 午餐窗口 11:40-14:00：先插午餐再进景点（超 14:00 不再插午餐，交给兜底逻辑） */
+          if(!lunchDone&&curT+tt>=11*60+40&&curT+tt<=14*60){
             var lt=curT+Math.min(tt,20);
             var best=null,bd=Infinity;
             pois.forEach(function(f){
@@ -2054,7 +2070,10 @@ function renderCards(pois, days){
             }
             curT=lt+60;lunchDone=true;tt=transitMin(prev,p);
           }
-          curT+=tt;p.dispTime=fmtHM(curT);
+          curT+=tt;
+          /* 夜间活动不早于 17:00 */
+          if(isNightPOI(p)&&curT<17*60)curT=17*60;
+          p.dispTime=fmtHM(curT);
           items.push({p:p,kind:'sight'});
           curT+=parseDurMin(p.dur)+15; /* 游览时长 + 15min 取整缓冲 */
           prev=p;
@@ -2066,7 +2085,7 @@ function renderCards(pois, days){
       fillers.forEach(function(tp){
         if(curT>17*60+30)return; /* 17:30 后不再安排新项目 */
         var tt=30;
-        if(!lunchDone&&curT+tt>=11*60+40){
+        if(!lunchDone&&curT+tt>=11*60+40&&curT+tt<=14*60){
           var lt=curT+Math.min(tt,20);
           var bestF=null,bdF=Infinity;
           pois.forEach(function(f){
@@ -2083,12 +2102,14 @@ function renderCards(pois, days){
           curT=lt+60;lunchDone=true;
         }
         curT+=tt;
+        /* 夜间自由安排不早于 17:00 */
+        if(isNightPOI(tp)&&curT<17*60)curT=17*60;
         items.push({p:{name:tp.name,cat:'free',dur:tp.dur,synthetic:true,desc:tp.desc},kind:'free',t:fmtHM(curT)});
         curT+=parseDurMin(tp.dur)+15;
       });
-      /* 兜底午餐（当天结束早于午餐窗口） */
+      /* 兜底午餐（全天未插入午餐时，补在 11:30-13:00 窗口） */
       if(!lunchDone){
-        var lt2=Math.max(curT,11*60+30);
+        var lt2=Math.min(Math.max(curT,11*60+30),13*60);
         var best2=null,bd2=Infinity;
         pois.forEach(function(f,fi){
           if(f.cat!=='food'||usedFood[fi])return;
