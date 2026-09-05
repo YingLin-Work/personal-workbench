@@ -1,7 +1,7 @@
 /* ============== 个人工作台 - 业务逻辑 ============== */
 
 // ---------- 版本 ----------
-const APP_VERSION = '1.1.1';   // 语义化版本号，发版后同步 git tag
+const APP_VERSION = '2.0.0';   // 语义化版本号，发版后同步 git tag
 
 // ---------- 存储：账号注册表 + 会话 ----------
 const STORAGE_KEY = 'workbench_accounts_v1';  // 所有用户数据
@@ -45,22 +45,6 @@ function defaultUserData() {
     lastActiveAt: Date.now(),
     activeDays: [todayStr()],  // 使用天数记录（用于"连续使用"统计）
     health: {
-      sport: {
-        plan: { period: '每天', time: '18:00-19:00', route: '小区跑道' },
-        logs: []  // { id, date, duration, note }
-      },
-      weight: {
-        plan: { target: '65.0', remindTime: '08:00' },
-        logs: []  // { id, date, weight }
-      },
-      habits: [
-        { id: 'h1', name: '早睡', icon: '🌙', goal: '23:00前', type: 'sleep', config: { targetTime: '23:00' } },
-        { id: 'h2', name: '读书', icon: '📖', goal: '30分钟', type: 'reading', config: { duration: 30 } },
-        { id: 'h3', name: '喝水', icon: '💧', goal: '8杯', type: 'water', config: { cups: 8, perTap: 300 } },
-        { id: 'h4', name: '运动', icon: '🏃', goal: '30分钟', type: 'simple', config: {} },
-        { id: 'h5', name: '早起', icon: '☀️', goal: '07:00前', type: 'wake', config: { targetTime: '07:00' } }
-      ],
-      habitLogs: {},  // { '2026-07-31': { 'h1': { time: '23:15', count: 1, duration: 30 }, ... } }
       camping: {
         logs: []  // { id, date, location, transport, people, rating, category, note }
       }
@@ -193,7 +177,7 @@ const PAGE_TITLES = {
   overview: '项目总览',
   tasks: '任务管理',
   projects: '项目管理',
-  health: '健康管理'
+  health: '户外露营'
 };
 
 // 切换到指定 Tab
@@ -1255,9 +1239,7 @@ function renderOverview() {
       }
     }
 
-    // 健康看板
-    renderHealthDashboard();
-  } catch (err) {
+    } catch (err) {
     console.error('renderOverview 错误:', err);
   }
 }
@@ -1375,7 +1357,7 @@ function enterApp() {
   initCalendar();
   initCollapsible();
   renderProjects();
-  renderHealth();
+  renderOutdoor();
   applyPrefs();
   refreshAvatar();
   initSidebar();
@@ -1504,9 +1486,8 @@ function renderSettingsStats() {
   const rate = total ? Math.round(done / total * 100) : 0;
   const projActive = (state.projects || []).filter(p => p.status === 'active').length;
   const days = (state.activeDays || []).length;
-  const habitTotal = (state.health?.habits || []).length;
-  const sportLogs = (state.health?.sport?.logs || []).length;
-  const weightLogs = (state.health?.weight?.logs || []).length;
+  const campingTotal = (state.health?.camping?.logs || []).length;
+  const lastCampDate = (state.health?.camping?.logs || []).length ? (state.health.camping.logs[state.health.camping.logs.length - 1].date || '—') : '—';
 
   statsEl.innerHTML = `
     <div class="stat-grid-item">
@@ -1526,12 +1507,12 @@ function renderSettingsStats() {
       <div class="stat-grid-label">使用天数</div>
     </div>
     <div class="stat-grid-item">
-      <div class="stat-grid-num">${habitTotal}</div>
-      <div class="stat-grid-label">习惯数</div>
+      <div class="stat-grid-num">${campingTotal}</div>
+      <div class="stat-grid-label">露营次数</div>
     </div>
     <div class="stat-grid-item">
-      <div class="stat-grid-num">${sportLogs + weightLogs}</div>
-      <div class="stat-grid-label">健康记录</div>
+      <div class="stat-grid-num">${lastCampDate}</div>
+      <div class="stat-grid-label">最近露营</div>
     </div>
   `;
 }
@@ -1839,10 +1820,10 @@ document.getElementById('rowTagManage')?.addEventListener('click', () => {
 document.getElementById('rowCloudUsage')?.addEventListener('click', () => {
   const tasksBytes = new Blob([JSON.stringify(state.tasks || [])]).size;
   const projBytes = new Blob([JSON.stringify(state.projects || [])]).size;
-  const healthBytes = new Blob([JSON.stringify(state.health || {})]).size;
+  const campingBytes = new Blob([JSON.stringify(state.health?.camping || {})]).size;
   const localData = new Blob([JSON.stringify(state)]).size;
   const totalKB = Math.round(localData / 1024 * 10) / 10;
-  alert(`📦 本地数据大小\n\n任务数据：约 ${Math.round(tasksBytes / 1024 * 10) / 10} KB\n项目数据：约 ${Math.round(projBytes / 1024 * 10) / 10} KB\n健康数据：约 ${Math.round(healthBytes / 1024 * 10) / 10} KB\n\n本地总占用：${totalKB} KB\n\n（当前为本地存储版，数据保存在浏览器中）`);
+  alert(`📦 本地数据大小\n\n任务数据：约 ${Math.round(tasksBytes / 1024 * 10) / 10} KB\n项目数据：约 ${Math.round(projBytes / 1024 * 10) / 10} KB\n露营数据：约 ${Math.round(campingBytes / 1024 * 10) / 10} KB\n\n本地总占用：${totalKB} KB\n\n（当前为本地存储版，数据保存在浏览器中）`);
 });
 
 // 全部数据文件导入（点击触发文件选择）
@@ -1862,7 +1843,7 @@ document.getElementById('rowBatchDelete')?.addEventListener('click', () => {
         <div class="batch-delete-checks">
           <label><input type="checkbox" id="batchDelTasks" checked> 清除已完成任务</label>
           <label><input type="checkbox" id="batchDelProjects"> 清除已暂停/已完成项目</label>
-          <label><input type="checkbox" id="batchDelHealthLogs"> 清除 30 天前健康记录</label>
+          <label><input type="checkbox" id="batchDelHealthLogs"> 清除 30 天前露营记录</label>
         </div>
       </div>
       <div class="modal-foot">
@@ -1894,17 +1875,10 @@ document.getElementById('rowBatchDelete')?.addEventListener('click', () => {
     if (delHealth) {
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
       const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}-${String(cutoff.getDate()).padStart(2, '0')}`;
-      ['sport', 'weight'].forEach(k => {
-        if (state.health && state.health[k]) {
-          const before = state.health[k].logs.length;
-          state.health[k].logs = state.health[k].logs.filter(l => l.date >= cutoffStr);
-          count += before - state.health[k].logs.length;
-        }
-      });
-      if (state.health && state.health.habitLogs) {
-        Object.keys(state.health.habitLogs).forEach(d => {
-          if (d < cutoffStr) { count++; delete state.health.habitLogs[d]; }
-        });
+      if (state.health && state.health.camping) {
+        const before = state.health.camping.logs.length;
+        state.health.camping.logs = state.health.camping.logs.filter(l => l.date >= cutoffStr);
+        count += before - state.health.camping.logs.length;
       }
     }
     saveState();
@@ -1952,10 +1926,8 @@ function maybeWarnBackup() {
     const tasks = (state.tasks || []).length;
     const projects = (state.projects || []).length;
     const events = Object.values(state.events || {}).reduce((a, b) => a + b.length, 0);
-    const healthLogs = (state.health?.sport?.logs || []).length
-      + (state.health?.weight?.logs || []).length
-      + (state.health?.camping?.logs || []).length;
-    const total = tasks + projects + events + healthLogs;
+    const campingLogs = (state.health?.camping?.logs || []).length;
+    const total = tasks + projects + events + campingLogs;
     if (total < 30) return;
     const key = 'workbench_backup_warned_' + currentUser;
     if (localStorage.getItem(key)) return;
@@ -1988,7 +1960,7 @@ document.getElementById('importFile').addEventListener('change', e => {
   e.target.value = '';
 });
 
-// 清空示例数据（确认后清空任务/项目/日程/健康数据，保留账号与外观设置）
+// 清空示例数据（确认后清空任务/项目/日程/露营数据，保留账号与外观设置）
 document.getElementById('rowClearSample')?.addEventListener('click', () => {
   const modal = document.createElement('div');
   modal.className = 'modal-mask show';
@@ -1996,7 +1968,7 @@ document.getElementById('rowClearSample')?.addEventListener('click', () => {
     <div class="modal glass">
       <div class="modal-head"><h3>清空示例数据</h3><button class="modal-close" id="clearSampleClose">×</button></div>
       <div class="modal-body">
-        <p style="color:var(--text-1);line-height:1.7;margin:0;">此操作将清空当前账号下的全部任务、项目、日程、健康记录数据，<br>恢复为空白状态（登录账号与外观设置保留）。<br><span style="color:var(--danger)">该操作不可撤销！</span><br>如需保留，请先点击「全部数据本地备份导出」。</p>
+        <p style="color:var(--text-1);line-height:1.7;margin:0;">此操作将清空当前账号下的全部任务、项目、日程、露营记录数据，<br>恢复为空白状态（登录账号与外观设置保留）。<br><span style="color:var(--danger)">该操作不可撤销！</span><br>如需保留，请先点击「全部数据本地备份导出」。</p>
       </div>
       <div class="modal-foot">
         <button class="btn btn-ghost" id="clearSampleCancel">取消</button>
@@ -2161,482 +2133,11 @@ document.getElementById('profileSave').addEventListener('click', () => {
   showToast('资料已更新');
 });
 
-// ========== 健康管理 ==========
-let healthSub = 'sport';  // 当前子Tab
-let healthEditingPlan = false;
-
-function renderHealth() {
-  // 确保 health 存在
+// ========== 户外管理（v2.0：仅保留露营） ==========
+function renderOutdoor() {
   if (!state.health) state.health = defaultUserData().health;
-  renderHealthPlan();
-  renderHealthChart();
-  renderHealthHistory();
+  renderCamping();
 }
-
-// 子Tab切换
-document.querySelectorAll('.health-tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    healthSub = btn.dataset.sub;
-    document.querySelectorAll('.health-tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.health-panel').forEach(p => p.classList.remove('active'));
-    const panelId = 'panel' + (healthSub === 'habit' ? 'Habit' : capitalize(healthSub));
-    document.getElementById(panelId).classList.add('active');
-    if (healthSub === 'habit') renderHabits();
-    else if (healthSub === 'camping') renderCamping();
-    else {
-      renderHealthPlan();
-      renderHealthChart();
-      renderHealthHistory();
-    }
-  });
-});
-
-// 渲染计划卡片
-function renderHealthPlan() {
-  const h = state.health[healthSub];
-  const plan = h.plan;
-  const el = document.getElementById(healthSub + 'Plan');
-
-  if (healthSub === 'sport') {
-    const dm = parseInt(plan.durationMin || 100, 10) || 100;
-    el.innerHTML = `
-      <h4>运动计划</h4>
-      <div class="health-plan-row"><span>周期：</span>${escapeHtml(plan.period || '未设置')}</div>
-      <div class="health-plan-row"><span>运动计划时间：</span>${dm} 分钟</div>
-      <div class="health-plan-row"><span>运动地点：</span>${escapeHtml(plan.location || '未设置')}</div>
-      <button class="health-plan-edit" onclick="editPlan('sport')">✎ 编辑计划</button>`;
-  } else if (healthSub === 'weight') {
-    el.innerHTML = `
-      <h4>体重目标</h4>
-      <div class="health-plan-row"><span>目标体重：</span>${escapeHtml(plan.target || '未设置')} kg</div>
-      <div class="health-plan-row"><span>提醒时间：</span>${escapeHtml(plan.remindTime || '未设置')}</div>
-      <button class="health-plan-edit" onclick="editPlan('weight')">✎ 编辑计划</button>`;
-  }
-}
-
-// 编辑计划
-function editPlan(type) {
-  healthSub = type;
-  const plan = state.health[type].plan;
-  const titleMap = { sport: '运动计划', weight: '体重目标', sleep: '作息安排' };
-  document.getElementById('healthLogTitle').textContent = '编辑' + titleMap[type];
-  healthEditingPlan = true;
-
-  const body = document.getElementById('healthLogBody');
-  if (type === 'sport') {
-    body.innerHTML = `
-      <label class="form-label">重复周期</label>
-      <select id="hlPeriod"><option>每天</option><option>每周</option></select>
-      <label class="form-label">运动计划时间</label>
-      <select id="hlDurationPlan">
-        <option value="30">30 分钟</option>
-        <option value="60">60 分钟</option>
-        <option value="90">90 分钟</option>
-        <option value="120">2 小时</option>
-        <option value="480">8 小时</option>
-        <option value="600">10 小时</option>
-        <option value="720">12 小时</option>
-      </select>
-      <label class="form-label">运动地点</label>
-      <input type="text" id="hlLocation" value="${escapeHtml(plan.location || '')}" placeholder="如 小区跑道">`;
-    setTimeout(() => {
-      document.getElementById('hlPeriod').value = plan.period || '每天';
-      document.getElementById('hlDurationPlan').value = String(plan.durationMin || 60);
-    }, 50);
-  } else if (type === 'weight') {
-    body.innerHTML = `
-      <label class="form-label">目标体重 (kg)</label>
-      <input type="text" id="hlTarget" value="${escapeHtml(plan.target||'65.0')}" placeholder="65.0">
-      <label class="form-label">每日提醒时间</label>
-      <input type="time" id="hlRemind" value="${escapeHtml(plan.remindTime||'08:00')}">`;
-  } else {
-    body.innerHTML = `
-      <label class="form-label">入睡时间</label>
-      <input type="time" id="hlBed" value="${escapeHtml(plan.bedTime||'23:00')}">
-      <label class="form-label">起床时间</label>
-      <input type="time" id="hlWake" value="${escapeHtml(plan.wakeTime||'07:00')}">`;
-  }
-  document.getElementById('healthLogModal').classList.add('show');
-}
-
-// 录入数据按钮（仅运动、体重）
-['sport', 'weight'].forEach(type => {
-  document.getElementById(type + 'LogBtn').addEventListener('click', () => {
-    healthSub = type;
-    healthEditingPlan = false;
-    const titleMap = { sport: '记录运动', weight: '记录体重' };
-    document.getElementById('healthLogTitle').textContent = titleMap[type];
-    const body = document.getElementById('healthLogBody');
-    if (type === 'sport') {
-      body.innerHTML = `
-        <label class="form-label">记录日期</label>
-        <input type="date" class="health-input" id="hlDate" value="${todayStr()}">
-        <label class="form-label">记录时间</label>
-        <input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}">
-        <label class="form-label">运动时长（分钟）</label>
-        <input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30">
-        <label class="form-label">备注（可选）</label>
-        <input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
-    } else {
-      body.innerHTML = `
-        <label class="form-label">记录日期</label>
-        <input type="date" class="health-input" id="hlDate" value="${todayStr()}">
-        <label class="form-label">记录时间</label>
-        <input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}">
-        <label class="form-label">今日体重 (kg)</label>
-        <input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
-    }
-    document.getElementById('healthLogModal').classList.add('show');
-  });
-});
-
-// 弹层控制
-document.getElementById('healthLogClose').addEventListener('click', () => {
-  document.getElementById('healthLogModal').classList.remove('show');
-});
-document.getElementById('healthLogCancel').addEventListener('click', () => {
-  document.getElementById('healthLogModal').classList.remove('show');
-});
-document.getElementById('healthLogModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('healthLogModal')) document.getElementById('healthLogModal').classList.remove('show');
-});
-
-// 保存
-document.getElementById('healthLogSave').addEventListener('click', () => {
-  const h = state.health[healthSub];
-
-  if (healthEditingPlan) {
-    if (healthSub === 'sport') {
-      h.plan.period = document.getElementById('hlPeriod')?.value || '每天';
-      h.plan.durationMin = parseInt(document.getElementById('hlDurationPlan')?.value, 10) || 60;
-      h.plan.location = document.getElementById('hlLocation')?.value || '';
-    } else if (healthSub === 'weight') {
-      h.plan.target = document.getElementById('hlTarget')?.value || '65.0';
-      h.plan.remindTime = document.getElementById('hlRemind')?.value || '08:00';
-    } else {
-      h.plan.bedTime = document.getElementById('hlBed')?.value || '23:00';
-      h.plan.wakeTime = document.getElementById('hlWake')?.value || '07:00';
-    }
-  } else {
-    const today = todayStr();
-    if (healthSub === 'sport') {
-      const dur = parseInt(document.getElementById('hlDuration')?.value) || 0;
-      const note = document.getElementById('hlNote')?.value || '';
-      const tm = document.getElementById('hlTime')?.value || nowTimeStr();
-      const dt = document.getElementById('hlDate')?.value || today;
-      if (dur <= 0) { showToast('请输入运动时长'); return; }
-      h.logs.push({ id: uid(), date: dt, time: tm, duration: dur, note });
-    } else if (healthSub === 'weight') {
-      const w = parseFloat(document.getElementById('hlWeight')?.value) || 0;
-      const tm = document.getElementById('hlTime')?.value || nowTimeStr();
-      const dt = document.getElementById('hlDate')?.value || today;
-      if (w <= 0) { showToast('请输入体重'); return; }
-      h.logs.push({ id: uid(), date: dt, time: tm, weight: w });
-    } else {
-      const sleep = document.getElementById('hlSleepTime')?.value || '23:00';
-      const wake = document.getElementById('hlWakeTime')?.value || '07:00';
-      h.logs.push({ id: uid(), date: today, sleepTime: sleep, wakeTime: wake });
-    }
-  }
-
-  saveState();
-  document.getElementById('healthLogModal').classList.remove('show');
-  renderHealthPlan();
-  renderHealthChart();
-  renderHealthHistory();
-  renderOverview();  // 同步总览
-  showToast(healthEditingPlan ? '计划已更新' : '已记录');
-  healthEditingPlan = false;
-});
-
-// 删除历史记录
-function deleteHealthLog(type, id) {
-  if (!confirm('删除这条记录？')) return;
-  const logs = state.health[type].logs;
-  const idx = logs.findIndex(l => l.id === id);
-  if (idx > -1) logs.splice(idx, 1);
-  saveState();
-  renderHealthChart();
-  renderHealthHistory();
-  showToast('已删除');
-}
-
-// 周图表
-function renderHealthChart() {
-  const h = state.health[healthSub];
-  const logs = h.logs || [];
-  const el = document.getElementById(healthSub + 'Chart');
-
-  if (!logs.length) {
-    el.innerHTML = `<h4>${chartTitle()}</h4><div class="health-chart-empty">暂无数据，点击上方按钮录入</div>`;
-    return;
-  }
-
-  // 最近7天
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-  }
-
-  const dayData = {};
-  days.forEach(d => { dayData[d] = 0; });
-  logs.forEach(l => {
-    if (dayData.hasOwnProperty(l.date)) {
-      if (healthSub === 'sport') dayData[l.date] += (l.duration || 0);
-      else if (healthSub === 'weight') dayData[l.date] = (l.weight || 0);
-      else dayData[l.date] = 1; // 作息打卡次数
-    }
-  });
-
-  const values = days.map(d => dayData[d]);
-  const maxV = Math.max(...values, 1);
-
-  el.innerHTML = `
-    <h4>${chartTitle()}（最近7天）</h4>
-    <div class="health-bars">${days.map((d, i) => {
-      const v = values[i];
-      const hPct = Math.round(v / maxV * 50);
-      const label = d.slice(5); // MM-DD
-      const unit = healthSub === 'weight' ? v + 'kg' : (healthSub === 'sport' ? v + 'min' : (v > 0 ? '已打卡' : '—'));
-      return `<div class="health-bar-col">
-        <span class="health-bar-label" style="font-size:9px;color:var(--text-2)">${unit}</span>
-        <div class="health-bar-stack"><div class="health-bar-fill" style="height:${hPct}px"></div></div>
-        <span class="health-bar-label">${label}</span>
-      </div>`;
-    }).join('')}</div>`;
-
-  function chartTitle() {
-    return { sport: '运动时长', weight: '体重趋势', sleep: '作息打卡' }[healthSub] || '';
-  }
-}
-
-// 历史记录
-function renderHealthHistory() {
-  const h = state.health[healthSub];
-  const logs = (h.logs || []).slice().reverse(); // 最新在前
-  const el = document.getElementById(healthSub + 'History');
-  if (!logs.length) {
-    el.innerHTML = '<h4>历史记录</h4><div class="health-chart-empty">暂无记录</div>';
-    return;
-  }
-  let html = '<h4>历史记录</h4>';
-  logs.forEach(l => {
-    let val = '';
-    if (healthSub === 'sport') val = `${l.duration} 分钟${l.note ? ' · ' + escapeHtml(l.note) : ''}`;
-    else if (healthSub === 'weight') val = `${l.weight} kg`;
-    else val = `入睡 ${l.sleepTime} · 起床 ${l.wakeTime}`;
-    html += `<div class="health-log-item">
-      <div><span class="health-log-date">${l.date}</span></div>
-      <div class="health-log-val">${val}</div>
-      <button class="health-log-del" onclick="deleteHealthLog('${healthSub}',${l.id})">×</button>
-    </div>`;
-  });
-  el.innerHTML = html;
-}
-
-// 暴露 deleteHealthLog 到全局
-window.deleteHealthLog = deleteHealthLog;
-window.editPlan = editPlan;
-
-// ========== 习惯打卡渲染 ==========
-let habitPickedIcon = '📖';
-let editingHabitId = null;   // 正在编辑的习惯 id（null 表示新增）
-
-// 兼容旧数据：将旧格式 habitLogs (string[]) 转为新格式 ({ habitId: { ... } })
-function migrateHabitLogs() {
-  if (!state.health.habitLogs) return;
-  const keys = Object.keys(state.health.habitLogs);
-  let migrated = false;
-  for (const d of keys) {
-    const val = state.health.habitLogs[d];
-    if (Array.isArray(val)) {
-      const newVal = {};
-      val.forEach(hid => { newVal[hid] = { count: 1 }; });
-      state.health.habitLogs[d] = newVal;
-      migrated = true;
-    }
-  }
-  if (migrated) saveState();
-}
-
-// 渲染单个习惯卡片
-function habitCardHTML(h) {
-  const today = todayStr();
-  const todayLogs = (state.health.habitLogs || {})[today] || {};
-  const log = todayLogs[h.id];
-  let done = !!log;
-  let info = '';
-  if (h.type === 'water') {
-    // 喝水量化：cups 表示已喝杯数（每次点击+1）；兼容旧数据中 count 为毫升(count/300=杯)
-    let cups = log ? (typeof log.cups === 'number' ? log.cups : Math.floor((log.count || 0) / 300)) : 0;
-    const target = h.config.cups || 8;
-    done = cups >= target;
-    info = `<span class="habit-card-progress">${Math.min(cups, target)}/${target} 杯</span>`;
-  } else if (h.type === 'reading' && log && log.duration) {
-    info = `<span class="habit-card-progress">${log.duration}分钟</span>`;
-  } else if ((h.type === 'sleep' || h.type === 'wake') && log && log.time) {
-    info = `<span class="habit-card-progress">${log.time}</span>`;
-  } else if (done) {
-    info = `<span class="habit-card-progress">✓ 已完成</span>`;
-  }
-  return `<div class="habit-card ${done ? 'done' : ''}" onclick="toggleHabit('${h.id}')">
-    <div class="habit-card-check">✓</div>
-    <div class="habit-card-icon">${h.icon}</div>
-    <div class="habit-card-name">${escapeHtml(h.name)}</div>
-    <div class="habit-card-goal">${info || escapeHtml(h.goal || '')}</div>
-    <div class="habit-card-actions">
-      <button class="habit-card-edit" onclick="event.stopPropagation();editHabit('${h.id}')">✎ 编辑</button>
-      <button class="habit-card-del" onclick="event.stopPropagation();deleteHabit('${h.id}')">删除</button>
-    </div>
-  </div>`;
-}
-
-function renderHabits() {
-  if (!state.health.habits) state.health.habits = defaultUserData().health.habits;
-  if (!state.health.habitLogs) state.health.habitLogs = {};
-  migrateHabitLogs();
-  // 兼容旧 habit 无 type
-  state.health.habits.forEach(h => { if (!h.type) { h.type = 'simple'; h.config = {}; } });
-
-  const habits = state.health.habits;
-  const preset = habits.filter(h => h.type === 'sleep' || h.type === 'wake');
-  const other = habits.filter(h => h.type !== 'sleep' && h.type !== 'wake');
-
-  const presetEl = document.getElementById('habitPreset');
-  const grid = document.getElementById('habitGrid');
-
-  // 早睡/早起 预设习惯 → 添加习惯按钮上方
-  if (presetEl) {
-    if (preset.length) {
-      presetEl.innerHTML = '<div class="habit-preset-label">作息习惯</div>' + preset.map(habitCardHTML).join('');
-    } else {
-      presetEl.innerHTML = '';
-    }
-  }
-
-  // 其他习惯 → 添加习惯按钮下方
-  if (!other.length) {
-    grid.innerHTML = '<div class="empty-tip" style="grid-column:span 2;">点击上方「+ 添加习惯」开始</div>';
-  } else {
-    grid.innerHTML = other.map(habitCardHTML).join('');
-  }
-}
-
-function toggleHabit(id) {
-  const today = todayStr();
-  if (!state.health.habitLogs[today]) state.health.habitLogs[today] = {};
-  const todayLogs = state.health.habitLogs[today];
-  const habit = (state.health.habits || []).find(h => h.id === id);
-  if (!habit) return;
-
-  // 已打卡则取消（喝水除外：喝水为计数型，不取消，重复点击累加）
-  if (todayLogs[id] && habit.type !== 'water') {
-    delete todayLogs[id];
-    saveState();
-    renderHabits();
-    renderHealthDashboard();
-    showToast('已取消打卡');
-    return;
-  }
-
-  // 根据类型执行打卡
-  const now = new Date();
-  const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
-  const type = habit.type || 'simple';
-  const config = habit.config || {};
-
-  if (type === 'simple') {
-    todayLogs[id] = { count: 1 };
-    showToast('打卡成功 ✓');
-  } else if (type === 'reading') {
-    const duration = parseInt(config.duration) || 30;
-    todayLogs[id] = { duration };
-    showToast(`读书打卡 ${duration} 分钟 ✓`);
-  } else if (type === 'sleep') {
-    todayLogs[id] = { time: timeStr };
-    showToast(`入睡时间 ${timeStr} 已记录 ✓`);
-  } else if (type === 'wake') {
-    todayLogs[id] = { time: timeStr };
-    showToast(`起床时间 ${timeStr} 已记录 ✓`);
-  } else if (type === 'water') {
-    // 每次点击 = 喝 1 杯，重复点击累计次数；达到目标后重置为新一轮
-    const target = config.cups || 8;
-    const prev = todayLogs[id] ? (todayLogs[id].cups || 0) : 0;
-    if (prev >= target) {
-      todayLogs[id] = { cups: 1 };          // 新一轮开始
-      showToast(`新一轮喝水 1/${target} 杯 ✓`);
-    } else {
-      const nc = prev + 1;
-      todayLogs[id] = { cups: nc };
-      if (nc >= target) {
-        showToast(`喝水 ${nc}/${target} 杯，达成今日目标 🎉`);
-      } else {
-        showToast(`喝水 ${nc}/${target} 杯 ✓`);
-      }
-    }
-  } else {
-    todayLogs[id] = { count: 1 };
-    showToast('打卡成功 ✓');
-  }
-
-  saveState();
-  renderHabits();
-  renderHealthDashboard();
-}
-
-function deleteHabit(id) {
-  if (!confirm('删除这个习惯？')) return;
-  state.health.habits = state.health.habits.filter(h => h.id !== id);
-  // 清理日志
-  Object.keys(state.health.habitLogs).forEach(d => {
-    delete state.health.habitLogs[d][id];
-  });
-  saveState();
-  renderHabits();
-  renderHealthDashboard();
-  showToast('习惯已删除');
-}
-
-window.toggleHabit = toggleHabit;
-window.deleteHabit = deleteHabit;
-
-// 编辑习惯：填充弹窗并打开（编辑模式）
-function editHabit(id) {
-  const habit = (state.health.habits || []).find(h => h.id === id);
-  if (!habit) return;
-  editingHabitId = id;
-  document.getElementById('habitModalTitle').textContent = '编辑习惯';
-
-  const type = habit.type || 'simple';
-  const config = habit.config || {};
-  document.getElementById('habitType').value = type;
-  // 显示对应专属字段
-  document.querySelectorAll('.habit-type-fields').forEach(el => el.style.display = 'none');
-  const targetId = 'habitFields' + type.charAt(0).toUpperCase() + type.slice(1);
-  const target = document.getElementById(targetId);
-  if (target) target.style.display = 'block';
-
-  // 填充字段
-  document.getElementById('habitName').value = (type === 'simple' || !type) ? (habit.name || '') : '';
-  document.getElementById('habitGoal').value = (type === 'simple' || !type) ? (habit.goal && habit.goal.includes('前') === false ? habit.goal || '' : '') : '';
-  // 图标选择
-  document.querySelectorAll('#habitIconPick span').forEach(s => {
-    const on = s.textContent === (habit.icon || '📖');
-    s.classList.toggle('picked', on);
-    if (on) habitPickedIcon = s.textContent;
-  });
-  if (config.duration) document.getElementById('readingDuration').value = config.duration;
-  if (config.targetTime) {
-    document.getElementById('sleepTargetTime').value = config.targetTime;
-    document.getElementById('wakeTargetTime').value = config.targetTime;
-  }
-  if (config.cups) document.getElementById('waterCups').value = config.cups;
-
-  document.getElementById('habitAddModal').classList.add('show');
-}
-window.editHabit = editHabit;
 
 // ========== 户外露营 ==========
 function campingLogs() {
@@ -2675,7 +2176,7 @@ function renderCampingGear() {
       <div class="camping-gear-stat"><span class="cg-num">${logs.length ? logs[logs.length - 1].date.slice(5) : '—'}</span><span class="cg-label">最近露营</span></div>
     </div>
     <div class="camping-gear-icons">${gear ? escapeHtml(gear) : '未设置装备清单，点击下方编辑'}</div>
-    <button class="health-plan-edit" onclick="editCampingGear()">✎ 编辑装备</button>
+    <button class="camping-gear-edit" onclick="editCampingGear()">✎ 编辑装备</button>
   `;
 }
 
@@ -2809,117 +2310,6 @@ document.getElementById('campingLogSave').addEventListener('click', () => {
 });
 
 
-// 添加习惯弹层
-function resetHabitAddModal() {
-  editingHabitId = null;
-  const mt = document.getElementById('habitModalTitle');
-  if (mt) mt.textContent = '添加习惯';
-  document.getElementById('habitName').value = '';
-  document.getElementById('habitGoal').value = '';
-  document.querySelectorAll('#habitIconPick span').forEach(s => s.classList.remove('picked'));
-  habitPickedIcon = '📖';
-  const typeSel = document.getElementById('habitType');
-  if (typeSel) typeSel.value = 'simple';
-  // 隐藏所有专属字段
-  document.querySelectorAll('.habit-type-fields').forEach(el => el.style.display = 'none');
-  // 显示 simple 专属字段
-  const fs = document.getElementById('habitFieldsSimple');
-  if (fs) fs.style.display = 'block';
-}
-
-document.getElementById('habitAddBtn').addEventListener('click', () => {
-  resetHabitAddModal();
-  document.getElementById('habitAddModal').classList.add('show');
-});
-
-// 类型切换
-const habitTypeSel = document.getElementById('habitType');
-if (habitTypeSel) {
-  habitTypeSel.addEventListener('change', () => {
-    const v = habitTypeSel.value;
-    document.querySelectorAll('.habit-type-fields').forEach(el => el.style.display = 'none');
-    const targetId = 'habitFields' + v.charAt(0).toUpperCase() + v.slice(1);
-    const target = document.getElementById(targetId);
-    if (target) target.style.display = 'block';
-  });
-}
-
-function closeHabitModal() {
-  editingHabitId = null;
-  document.getElementById('habitAddModal').classList.remove('show');
-}
-document.getElementById('habitAddClose').addEventListener('click', closeHabitModal);
-document.getElementById('habitAddCancel').addEventListener('click', closeHabitModal);
-document.getElementById('habitAddModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('habitAddModal')) closeHabitModal();
-});
-document.querySelectorAll('#habitIconPick span').forEach(s => {
-  s.addEventListener('click', () => {
-    document.querySelectorAll('#habitIconPick span').forEach(ss => ss.classList.remove('picked'));
-    s.classList.add('picked');
-    habitPickedIcon = s.textContent;
-  });
-});
-document.getElementById('habitAddSave').addEventListener('click', () => {
-  const habitType = document.getElementById('habitType').value;
-  let name, icon, goal, config = {};
-
-  if (habitType === 'simple') {
-    name = document.getElementById('habitName').value.trim();
-    if (!name) { showToast('请输入习惯名称'); return; }
-    icon = habitPickedIcon;
-    goal = document.getElementById('habitGoal').value.trim() || '每日1次';
-  } else if (habitType === 'reading') {
-    name = '读书';
-    icon = '📖';
-    const duration = parseInt(document.getElementById('readingDuration').value) || 30;
-    goal = `${duration}分钟`;
-    config = { duration };
-  } else if (habitType === 'sleep') {
-    name = '早睡';
-    icon = '🌙';
-    const targetTime = document.getElementById('sleepTargetTime').value || '23:00';
-    goal = `${targetTime}前`;
-    config = { targetTime };
-  } else if (habitType === 'wake') {
-    name = '早起';
-    icon = '☀️';
-    const targetTime = document.getElementById('wakeTargetTime').value || '07:00';
-    goal = `${targetTime}前`;
-    config = { targetTime };
-  } else if (habitType === 'water') {
-    name = '喝水';
-    icon = '💧';
-    const cups = parseInt(document.getElementById('waterCups').value) || 8;
-    goal = `${cups}杯`;
-    config = { cups, perTap: 300 };
-  } else {
-    name = document.getElementById('habitName').value.trim();
-    if (!name) { showToast('请输入习惯名称'); return; }
-    icon = habitPickedIcon;
-    goal = document.getElementById('habitGoal').value.trim() || '每日1次';
-  }
-
-  if (editingHabitId) {
-    const h = state.health.habits.find(h => h.id === editingHabitId);
-    if (h) {
-      if (h.type !== habitType) {
-        // 类型变了，清理历史日志中的旧数据
-        Object.keys(state.health.habitLogs).forEach(d => { delete state.health.habitLogs[d][h.id]; });
-      }
-      Object.assign(h, { name, icon, goal, type: habitType, config });
-      showToast('习惯已更新');
-    }
-  } else {
-    state.health.habits.push({ id: 'h' + uid(), name, icon, goal, type: habitType, config });
-    showToast('习惯已添加');
-  }
-  saveState();
-  editingHabitId = null;
-  document.getElementById('habitAddModal').classList.remove('show');
-  renderHabits();
-  renderHealthDashboard();
-});
 
 // ========== FAB 菜单 ==========
 let fabOpen = false;
@@ -2933,347 +2323,13 @@ document.querySelectorAll('.fab-menu-item').forEach(item => {
     else if (action === 'project') {
       // 打开新建项目弹窗
       openProjectModal();
-    } else if (action === 'habit') {
-      // 直接打开添加习惯弹层
-      resetHabitAddModal();
-      document.getElementById('habitAddModal').classList.add('show');
+    } else if (action === 'camping') {
+      // 打开记录露营弹层
+      openCampingModal();
     }
   });
 });
 
-// 更新健康看板（替换旧版，加入作息表格）
-function renderHealthDashboard() {
-  const el = document.getElementById('healthDashboard');
-  if (!el) return;
-  if (!state.health) state.health = defaultUserData().health;
-  const sport = state.health.sport || { plan: {}, logs: [] };
-  const weight = state.health.weight || { plan: {}, logs: [] };
-  const habits = state.health.habits || [];
-
-  // 本周（根据周起始日设置）为完整一周，作为运动计时统计范围
-  const weekStartDate = new Date();
-  weekStartDate.setDate(weekStartDate.getDate() + getWeekOffset());
-  const weekDays = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStartDate); d.setDate(weekStartDate.getDate() + i);
-    weekDays.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-  }
-  const weekSet = new Set(weekDays);
-  const sportMin = (sport.logs || []).filter(l => weekSet.has(l.date)).reduce((s, l) => s + (l.duration || 0), 0);
-  const today = todayStr();
-  const todayLogs = state.health.habitLogs ? (state.health.habitLogs[today] || {}) : {};
-  const todayCount = Object.keys(todayLogs).length;
-  // 当日运动打卡时间（分钟）
-  const todaySportMin = (sport.logs || []).filter(l => l.date === today).reduce((s, l) => s + (l.duration || 0), 0);
-  // 每日运动计划时间（分钟），默认 100
-  const planMin = parseInt(sport.plan.durationMin || 100, 10) || 100;
-
-  el.innerHTML = `
-    <div class="hd-section hd-section-metrics">
-    <div class="hd-row">
-      <div class="hd-card">
-        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val ${todaySportMin >= planMin ? 'ok' : 'warn'}">${todaySportMin}/${planMin}</div>
-        <div class="hd-card-label">运动计划</div>
-      </div>
-      <div class="hd-card accent">
-        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val">${sportMin}</div>
-        <div class="hd-card-label">本周运动（分钟）</div>
-      </div>
-      <div class="hd-card">
-        <div class="hd-card-icon"><svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.2 12.4 11 15.2l5-5.4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <div class="hd-card-val ${todayCount >= habits.length ? 'ok' : 'warn'}">${todayCount}/${habits.length}</div>
-        <div class="hd-card-label">今日打卡</div>
-      </div>
-    </div>
-    <div class="hd-plan">
-      <strong>运动：</strong>${escapeHtml(sport.plan.period||'未设置')} · ${planMin} 分钟 · ${escapeHtml(sport.plan.location||'未设置地点')}
-    </div>
-    </div>
-    <div class="hd-section hd-section-sleep">
-      ${renderSleepChart()}
-    </div>
-    <div class="hd-section hd-section-trend">
-      ${renderTrendChart()}
-      <div class="hd-quick-actions">
-        <button class="hd-quick-btn sport" onclick="quickHealthLog('sport')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="15" cy="5" r="2.2" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M13.5 8 11 12.5l1.5 2v5.5M13.5 8l2.5 2 3 .8M11 12.5 8 14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 运动</button>
-        <button class="hd-quick-btn weight" onclick="quickHealthLog('weight')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M13 8h2l1-2h-8l1 2h2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 体重</button>
-        <button class="hd-quick-btn sleep" onclick="quickHealthLog('habit')"><svg viewBox="0 0 24 24" width="17" height="17"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M8.5 12.4 11 15l4.5-4.6" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 打卡</button>
-      </div>
-    </div>
-  `;
-
-  function renderSleepChart() {
-    // 最近14天
-    const days14 = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      days14.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-    }
-
-    // 柱子纵向范围：前一天 22:00（底部） → 当天 10:00（顶部）
-    // 中间虚线 = 当天 0:00
-    // 虚线向上：0:00 → 起床时间（当天睡段）
-    // 虚线向下：0:00 → 入睡时间（前夜睡段）
-
-    const COL_H = 144;  // 12 小时 = 144px（1 小时 = 12px）
-    // 以当天 0:00 为基准（相对分钟）：
-    //   前一天 22:00 = -120，当天 0:00 = 0，当天 10:00 = +600
-    const RANGE = [-120, 600];               // 范围 720 分钟 = 12 小时
-    function parseHM(str) {
-      const m = String(str || '').match(/^(\d{1,2}):(\d{2})/);
-      return m ? { h: parseInt(m[1], 10), m: parseInt(m[2], 10) } : null;
-    }
-    // 把 HH:MM 归到最近的整点/半点（半小时一个档位）
-    function roundHalf(p) {
-      const total = p.h * 60 + p.m;
-      const r = Math.round(total / 30) * 30;
-      return { h: (Math.floor(r / 60)) % 24, m: r % 60 };
-    }
-    function toRel(h, m) {
-      // h>=12 时视为"前一天晚上"，否则视为"当天"
-      if (h >= 12) return -(24 - h) * 60 + m;  // 前一日（距当天0点的负分钟数）
-      return h * 60 + m;                         // 当天（距0点的分钟数）
-    }
-    function posYFromTop(relMin) {
-      return Math.round((RANGE[1] - relMin) / (RANGE[1] - RANGE[0]) * COL_H);
-    }
-    const yMid = posYFromTop(0);  // 0:00 = 虚线位置
-
-    // 找出"早睡(sleep)""早起(wake)"习惯的 id
-    const sleepIds = habits.filter(h => h.type === 'sleep').map(h => h.id);
-    const wakeIds  = habits.filter(h => h.type === 'wake').map(h => h.id);
-    const logs = state.health.habitLogs || {};
-    // 取某天某类习惯最早的一条打卡时间
-    function dayTime(dateKey, ids) {
-      const dayLog = logs[dateKey] || {};
-      for (const id of ids) {
-        const lg = dayLog[id];
-        if (lg && lg.time) return lg.time;
-      }
-      return null;
-    }
-    // 默认入睡/起床（未打卡时用）
-    const DEF_BED = { h: 23, m: 0 };
-    const DEF_WAKE = { h: 6, m: 30 };
-
-    let html = '<div class="hd-sleep-title">14天睡眠记录</div>';
-    html += '<div class="sleep-chart-wrap">';
-    // 左侧时间刻度：10:00 / 0:00 / 22:00（纵向对应柱子的顶 / 虚线 / 底）
-    html += '<div class="sleep-axis">'
-      +     '<span class="sleep-axis-label" style="top:2px">10:00</span>'
-      +     '<span class="sleep-axis-label" style="top:' + (yMid - 6) + 'px">0:00</span>'
-      +     '<span class="sleep-axis-label" style="bottom:2px">22:00</span>'
-      +   '</div>';
-    // 柱子区
-    html += '<div class="sleep-chart-bars">';
-    // 0 点虚线（相对 bars 容器）
-    html += '<div class="sleep-zero-line" style="top:' + yMid + 'px"></div>';
-    days14.forEach(d => {
-      const label = d.slice(8); // 只取日
-      // 入睡：前一天晚上的 sleep 打卡；起床：当天的 wake 打卡
-      let bed = DEF_BED, wake = DEF_WAKE;
-      let hasData = false;
-      if (sleepIds.length) {
-        const prev = new Date(d + 'T00:00'); prev.setDate(prev.getDate() - 1);
-        const prevKey = isoDate(prev);
-        const bt = dayTime(prevKey, sleepIds);
-        if (bt) { const p = parseHM(bt); if (p) { bed = roundHalf(p); hasData = true; } }
-      }
-      if (wakeIds.length) {
-        const wt = dayTime(d, wakeIds);
-        if (wt) { const p = parseHM(wt); if (p) { wake = roundHalf(p); hasData = true; } }
-      }
-      // 放松段 = 入睡前 30 分钟
-      const relaxH = (bed.h * 60 + bed.m - 30);
-      const relax = { h: Math.floor(relaxH / 60) % 24, m: relaxH % 60 };
-
-      const bedRel   = toRel(bed.h, bed.m);
-      const wakeRel  = toRel(wake.h, wake.m);
-      const relaxRel = toRel(relax.h, relax.m);
-      const yWake = posYFromTop(wakeRel);
-      const yBed  = posYFromTop(bedRel);
-      const yRelax = posYFromTop(relaxRel);
-      // 忽略异常（起床早于入睡导致负段）的兜底
-      const gray1  = Math.max(yWake, 0);
-      const green  = Math.max(yMid - yWake, 0);
-      const blue   = Math.max(yBed - yMid, 0);
-      const relx   = Math.max(yRelax - yBed, 0);
-      const gray2  = Math.max(COL_H - yRelax, 0);
-
-      html += '<div class="sleep-bar-col ' + (hasData ? '' : 'no-data') + '">'
-        + '<div class="sleep-bar-stack" style="height:' + COL_H + 'px">'
-        + '<div class="sleep-bar-seg sleep-gray" style="height:' + gray1 + 'px"></div>'
-        + '<div class="sleep-bar-seg sleep-green" style="height:' + green + 'px"></div>'
-        + '<div class="sleep-bar-seg sleep-blue" style="height:' + blue + 'px"></div>'
-        + '<div class="sleep-bar-seg sleep-lightblue" style="height:' + relx + 'px"></div>'
-        + '<div class="sleep-bar-seg sleep-gray" style="height:' + gray2 + 'px"></div>'
-        + '</div>'
-        + '<span class="sleep-bar-label">' + label + '</span>'
-        + '</div>';
-    });
-    html += '</div></div>';
-    return html;
-  }
-
-  function renderTrendChart() {
-    // 最近14天
-    const days14 = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i);
-      days14.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
-    }
-
-    // 聚合每日运动时长
-    const sportMap = {};
-    (sport.logs || []).forEach(l => {
-      if (!sportMap[l.date]) sportMap[l.date] = 0;
-      sportMap[l.date] += l.duration || 0;
-    });
-    const sportData = days14.map(d => sportMap[d] || 0);
-
-    // 取每日最新体重
-    const weightMap = {};
-    (weight.logs || []).forEach(l => { weightMap[l.date] = l.weight; });
-    const weightData = days14.map(d => weightMap[d] || null);
-
-    const hasSport = sportData.some(v => v > 0);
-    const hasWeight = weightData.some(v => v !== null);
-    if (!hasSport && !hasWeight) {
-      return '<div class="hd-trend-title">14天健康趋势</div><div class="hd-trend-chart"><div class="hd-trend-empty">暂无运动和体重数据</div></div>';
-    }
-
-    const W = 320, H = 130, pad = { t: 10, r: 10, b: 20, l: 28 };
-    const chartW = W - pad.l - pad.r;
-    const chartH = H - pad.t - pad.b;
-
-    // 运动 Y 轴
-    const maxSport = Math.max(...sportData, 30);
-    const sportScale = v => pad.t + chartH - (v / maxSport) * chartH;
-
-    // 体重 Y 轴
-    const validWeights = weightData.filter(v => v !== null);
-    let minWeight = validWeights.length ? Math.min(...validWeights) : 50;
-    let maxWeight = validWeights.length ? Math.max(...validWeights) : 80;
-    if (minWeight === maxWeight) { minWeight -= 2; maxWeight += 2; }
-    const weightRange = maxWeight - minWeight || 1;
-    const weightScale = v => pad.t + chartH - ((v - minWeight) / weightRange) * chartH;
-
-    // 构建路径
-    const x = i => pad.l + (i / (days14.length - 1)) * chartW;
-
-    let sportPath = '';
-    sportData.forEach((v, i) => {
-      const cmd = i === 0 ? 'M' : 'L';
-      sportPath += `${cmd}${x(i)},${sportScale(v)} `;
-    });
-
-    let weightPath = '';
-    let firstWeight = true;
-    // 只在有记录的日期间直接连线，跳过空缺日期（不填充值）
-    weightData.forEach((v, i) => {
-      if (v === null) return;
-      const cmd = firstWeight ? 'M' : 'L';
-      firstWeight = false;
-      weightPath += `${cmd}${x(i)},${weightScale(v)} `;
-    });
-
-    // 网格线
-    let gridHtml = '';
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.t + (chartH / 4) * i;
-      gridHtml += `<line class="hd-trend-grid" x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}"/>`;
-    }
-
-    // 底部日期标签（只显示部分避免拥挤）
-    let labelsHtml = '';
-    days14.forEach((d, i) => {
-      if (i % 3 === 0 || i === days14.length - 1) {
-        labelsHtml += `<text class="hd-trend-label" x="${x(i)}" y="${H - 4}">${d.slice(8)}</text>`;
-      }
-    });
-
-    // 左侧运动刻度
-    let leftAxisHtml = '';
-    for (let i = 0; i <= 4; i++) {
-      const v = Math.round((maxSport / 4) * (4 - i));
-      const y = pad.t + (chartH / 4) * i;
-      leftAxisHtml += `<text class="hd-trend-label" x="${pad.l - 6}" y="${y + 3}" text-anchor="end">${v}</text>`;
-    }
-
-    // 右侧体重刻度
-    let rightAxisHtml = '';
-    for (let i = 0; i <= 4; i++) {
-      const v = (minWeight + (weightRange / 4) * (4 - i)).toFixed(1);
-      const y = pad.t + (chartH / 4) * i;
-      rightAxisHtml += `<text class="hd-trend-label" x="${W - pad.r + 6}" y="${y + 3}" text-anchor="start">${v}</text>`;
-    }
-
-    // 运动圆点
-    const sportDots = sportData.map((v, i) =>
-      v > 0 ? `<circle class="hd-trend-dot" cx="${x(i)}" cy="${sportScale(v)}" r="3" fill="var(--accent)"/>` : ''
-    ).join('');
-
-    // 体重圆点
-    const weightDots = weightData.map((v, i) =>
-      v !== null ? `<circle class="hd-trend-dot" cx="${x(i)}" cy="${weightScale(v)}" r="3" fill="var(--accent-2)"/>` : ''
-    ).join('');
-
-    return `
-      <div class="hd-trend-title">14天健康趋势</div>
-      <div class="hd-trend-chart">
-        <div class="hd-trend-legend">
-          <span><i style="background:var(--accent)"></i>运动（分钟）</span>
-          <span><i style="background:var(--accent-2)"></i>体重（kg）</span>
-        </div>
-        <svg class="hd-trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-          ${gridHtml}
-          <line class="hd-trend-axis" x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${H - pad.b}"/>
-          <line class="hd-trend-axis" x1="${W - pad.r}" y1="${pad.t}" x2="${W - pad.r}" y2="${H - pad.b}"/>
-          ${labelsHtml}
-          ${leftAxisHtml}
-          ${rightAxisHtml}
-          ${sportPath ? `<path class="hd-trend-line-sport" d="${sportPath}"/>` : ''}
-          ${weightPath ? `<path class="hd-trend-line-weight" d="${weightPath}"/>` : ''}
-          ${sportDots}
-          ${weightDots}
-        </svg>
-      </div>
-    `;
-  }
-}
-
-// 更新 quickHealthLog 支持 habit
-function quickHealthLog(type) {
-  healthSub = type;
-  healthEditingPlan = false;
-  if (type === 'habit') {
-    document.getElementById('healthLogModal').classList.remove('show');
-    // 切换到健康页的习惯Tab
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-tab="health"]').classList.add('active');
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('pageHealth').classList.add('active');
-    document.querySelectorAll('.health-tab').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-sub="habit"]').classList.add('active');
-    document.querySelectorAll('.health-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panelHabit').classList.add('active');
-    healthSub = 'habit';
-    renderHabits();
-    return;
-  }
-  const titleMap = { sport: '记录运动', weight: '记录体重' };
-  document.getElementById('healthLogTitle').textContent = titleMap[type] || '记录';
-  const body = document.getElementById('healthLogBody');
-  if (type === 'sport') {
-    body.innerHTML = `<label class="form-label">记录日期</label><input type="date" class="health-input" id="hlDate" value="${todayStr()}"><label class="form-label">记录时间</label><input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}"><label class="form-label">运动时长（分钟）</label><input type="number" class="health-input" id="hlDuration" placeholder="如 30" min="1" max="300" value="30"><label class="form-label">备注（可选）</label><input type="text" class="health-input" id="hlNote" placeholder="如 慢跑">`;
-  } else if (type === 'weight') {
-    body.innerHTML = `<label class="form-label">记录日期</label><input type="date" class="health-input" id="hlDate" value="${todayStr()}"><label class="form-label">记录时间</label><input type="time" class="health-input" id="hlTime" value="${nowTimeStr()}"><label class="form-label">今日体重 (kg)</label><input type="number" class="health-input" id="hlWeight" placeholder="如 65.5" step="0.1" min="30" max="200">`;
-  }
-  document.getElementById('healthLogModal').classList.add('show');
-}
-window.quickHealthLog = quickHealthLog;
 
 // ========== 启动 ==========
 applyPrefs();
