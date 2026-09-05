@@ -99,8 +99,8 @@
         <span>项目</span>
       </button>
       <button class="tab" data-tab="health">
-        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 21s-8-6-8-13A5 5 0 0 1 12 4a5 5 0 0 1 8 4c0 7-8 13-8 13Z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
-        <span>健康</span>
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M3 19h18M5 19l4-9 4 6 3-4 3 7M5 17h14" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>户外</span>
       </button>
     </nav>
 
@@ -183,36 +183,23 @@
         </div>
       </div>
 
-      <!-- 项目看板 + 健康看板（左右并排） -->
-      <div class="overview-bottom-row">
-        <!-- 项目卡片组 -->
-        <div class="overview-projects-panel">
-          <div class="panel-head">
-            <span class="panel-title">项目看板</span>
-            <span class="panel-meta" id="overviewProjectCount">0 个项目</span>
-          </div>
-          <div class="projects-row" id="overviewProjects">
-            <!-- JS 渲染 -->
-          </div>
-          <!-- 任务搜索框（位于项目看板面板下方，右侧搜索图标做确认搜索） -->
-          <div class="search-bar overview-search">
-            <input type="text" placeholder="搜索任务、项目..." id="searchInput">
-            <button class="search-btn" id="searchBtn" title="搜索">
-              <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
-            </button>
-          </div>
+      <!-- 项目看板 -->
+      <div class="overview-projects-panel">
+        <div class="panel-head">
+          <span class="panel-title">项目看板</span>
+          <span class="panel-meta" id="overviewProjectCount">0 个项目</span>
         </div>
-        <!-- 健康看板 -->
-        <div class="overview-health-panel">
-          <div class="panel-head">
-            <span class="panel-title">健康看板</span>
-          </div>
-          <div class="health-dashboard" id="healthDashboard">
-            <!-- JS 渲染 -->
-          </div>
+        <div class="projects-row" id="overviewProjects">
+          <!-- JS 渲染 -->
+        </div>
+        <!-- 任务搜索框（位于项目看板面板下方，右侧搜索图标做确认搜索） -->
+        <div class="search-bar overview-search">
+          <input type="text" placeholder="搜索任务、项目..." id="searchInput">
+          <button class="search-btn" id="searchBtn" title="搜索">
+            <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+          </button>
         </div>
       </div>
-
     </section>
 
     <!-- ========== 任务管理页（日历 + 今日待办 + 本周任务） ========== -->
@@ -296,59 +283,16 @@
       </div>
     </section>
 
-    <!-- ========== 健康管理页 ========== -->
+    <!-- ========== 户外页面（v2.0：仅保留露营） ========== -->
     <section class="page page-health" id="pageHealth">
-      <!-- 子Tab -->
-      <div class="health-tabs">
-        <button class="health-tab active" data-sub="sport">运动训练</button>
-        <button class="health-tab" data-sub="weight">体重管理</button>
-        <button class="health-tab" data-sub="habit">习惯打卡</button>
-        <button class="health-tab" data-sub="camping">户外露营</button>
-      </div>
-
-      <!-- 运动训练 -->
-      <div class="health-panel active" id="panelSport">
-        <!-- 计划 -->
-        <div class="health-plan glass" id="sportPlan"></div>
-        <!-- 录入按钮 -->
-        <button class="btn btn-primary health-log-btn" id="sportLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg> 记录运动</button>
-        <!-- 周图表 -->
-        <div class="health-chart glass" id="sportChart"></div>
-        <!-- 历史 -->
-        <div class="health-history" id="sportHistory"></div>
-      </div>
-
-      <!-- 体重管理 -->
-      <div class="health-panel" id="panelWeight">
-        <div class="health-plan glass" id="weightPlan"></div>
-        <button class="btn btn-primary health-log-btn" id="weightLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 3l4 4L8 20l-5 1 1-5L17 3Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/></svg> 记录体重</button>
-        <div class="health-chart glass" id="weightChart"></div>
-        <div class="health-history" id="weightHistory"></div>
-      </div>
-
-      <!-- 习惯打卡 -->
-      <div class="health-panel" id="panelHabit">
-        <!-- 早睡/早起 预设习惯（在添加习惯按钮上方） -->
-        <div class="habit-preset" id="habitPreset"></div>
-        <!-- 添加习惯按钮（与记录运动一致的横向绿色模块） -->
-        <button class="btn btn-primary health-log-btn" id="habitAddBtn" style="margin-bottom:10px;">+ 添加习惯</button>
-        <!-- 其他新建习惯 -->
-        <div class="habit-grid" id="habitGrid">
-          <!-- JS 渲染双列习惯卡 -->
-        </div>
-      </div>
-
-      <!-- 户外露营 -->
-      <div class="health-panel" id="panelCamping">
-        <!-- 露营装备看板（最上面） -->
-        <div class="camping-gear glass" id="campingGear"></div>
-        <!-- 记录露营 -->
-        <button class="btn btn-primary health-log-btn" id="campingLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 4 3 19h18L12 4Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><path d="M12 4l2.5 15M12 4 9.5 19M5 14h14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 记录露营</button>
-        <!-- 露营看板 -->
-        <div class="camping-board glass" id="campingBoard"></div>
-        <!-- 历史记录 -->
-        <div class="camping-history" id="campingHistory"></div>
-      </div>
+      <!-- 露营装备看板（最上面） -->
+      <div class="camping-gear glass" id="campingGear"></div>
+      <!-- 记录露营 -->
+      <button class="btn btn-primary camping-log-btn" id="campingLogBtn"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 4 3 19h18L12 4Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><path d="M12 4l2.5 15M12 4 9.5 19M5 14h14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg> 记录露营</button>
+      <!-- 露营看板 -->
+      <div class="camping-board glass" id="campingBoard"></div>
+      <!-- 历史记录 -->
+      <div class="camping-history" id="campingHistory"></div>
     </section>
   </main>
 
@@ -470,7 +414,7 @@
               <option value="overview" selected>总览</option>
               <option value="tasks">任务</option>
               <option value="projects">项目</option>
-              <option value="health">健康</option>
+              <option value="health">户外</option>
             </select>
           </div>
           <div class="settings-row">
@@ -516,9 +460,9 @@
         <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M8 9h8M8 13h5M8 17h3" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg></span>
         <span class="fab-menu-label">新建任务</span>
       </button>
-      <button class="fab-menu-item" data-action="habit">
-        <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.7" fill="none"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round"/></svg></span>
-        <span class="fab-menu-label">添加习惯</span>
+      <button class="fab-menu-item" data-action="camping">
+        <span class="fab-menu-icon"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 4 3 19h18L12 4Z" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linejoin="round"/><path d="M12 4l2.5 15M12 4 9.5 19M5 14h14" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="fab-menu-label">记录露营</span>
       </button>
     </div>
   </div>
@@ -597,84 +541,6 @@
   <!-- 导入文件 -->
   <input type="file" id="importFile" accept="application/json" style="display:none;">
   </div><!-- /appShell -->
-
-  <!-- 健康数据录入弹层 -->
-  <div class="modal-mask" id="healthLogModal">
-    <div class="modal glass">
-      <div class="modal-head">
-        <h3 id="healthLogTitle">记录数据</h3>
-        <button class="modal-close" id="healthLogClose">×</button>
-      </div>
-      <div class="modal-body" id="healthLogBody">
-        <!-- JS 动态渲染 -->
-      </div>
-      <div class="modal-foot">
-        <button class="btn btn-ghost" id="healthLogCancel">取消</button>
-        <button class="btn btn-primary" id="healthLogSave">保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 添加习惯弹层 -->
-  <div class="modal-mask" id="habitAddModal">
-    <div class="modal glass">
-      <div class="modal-head">
-        <h3 id="habitModalTitle">添加习惯</h3>
-        <button class="modal-close" id="habitAddClose">×</button>
-      </div>
-      <div class="modal-body">
-        <label class="form-label">习惯类型</label>
-        <select id="habitType" class="form-select">
-          <option value="simple">📌 简单打卡（点一次即完成）</option>
-          <option value="reading">📖 读书打卡（记录时长）</option>
-          <option value="sleep">🌙 早睡打卡（自动记录入睡时间）</option>
-          <option value="wake">☀️ 早起打卡（自动记录起床时间）</option>
-          <option value="water">💧 喝水打卡（每次 300ml，每日目标 8 杯）</option>
-        </select>
-
-        <div class="habit-type-fields" id="habitFieldsSimple" style="display:block;">
-          <label class="form-label">习惯名称</label>
-          <input type="text" id="habitName" placeholder="如：冥想、写日记..." maxlength="10">
-          <label class="form-label">图标</label>
-          <div class="habit-icon-pick" id="habitIconPick">
-            <span>📖</span><span>💧</span><span>🏃</span><span>🧘</span><span>🎵</span>
-            <span>📝</span><span>🍎</span><span>💊</span><span>🚶</span><span>☀️</span>
-            <span>🌙</span><span>📱</span><span>🎬</span><span>📚</span><span>✍️</span>
-            <span>🧹</span><span>🐱</span><span>🌱</span><span>💪</span><span>🎯</span>
-          </div>
-          <label class="form-label">每日目标</label>
-          <input type="text" id="habitGoal" placeholder="如：1次 / 30分钟" maxlength="15">
-        </div>
-
-        <div class="habit-type-fields" id="habitFieldsReading" style="display:none;">
-          <label class="form-label">每日阅读目标（分钟）</label>
-          <input type="number" id="readingDuration" placeholder="如：30" value="30" min="5" max="300">
-        </div>
-
-        <div class="habit-type-fields" id="habitFieldsSleep" style="display:none;">
-          <label class="form-label">目标入睡时间</label>
-          <input type="time" id="sleepTargetTime" value="23:00">
-          <p class="form-hint">打卡时自动记录当前时间为入睡时间</p>
-        </div>
-
-        <div class="habit-type-fields" id="habitFieldsWake" style="display:none;">
-          <label class="form-label">目标起床时间</label>
-          <input type="time" id="wakeTargetTime" value="07:00">
-          <p class="form-hint">打卡时自动记录当前时间为起床时间</p>
-        </div>
-
-        <div class="habit-type-fields" id="habitFieldsWater" style="display:none;">
-          <label class="form-label">每日目标杯数</label>
-          <input type="number" id="waterCups" value="8" min="1" max="20">
-          <p class="form-hint">每点一次打卡 = 300ml，目标 8 杯/天</p>
-        </div>
-      </div>
-      <div class="modal-foot">
-        <button class="btn btn-ghost" id="habitAddCancel">取消</button>
-        <button class="btn btn-primary" id="habitAddSave">添加</button>
-      </div>
-    </div>
-  </div>
 
   <!-- 记录露营弹层 -->
   <div class="modal-mask" id="campingLogModal">

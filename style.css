@@ -973,87 +973,6 @@ body {
 .collapse-body .task-list,
 .collapse-body .event-list { margin: 0; }
 
-/* 健康趋势折线图 */
-.hd-trend-chart {
-  margin-top: 6px;
-  padding: 14px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-/* 健康趋势标题：位于折线图卡片上方，居中 */
-.hd-trend-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  text-align: center;
-  margin: 0 auto 8px;
-}
-.hd-trend-legend {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin-bottom: 10px;
-  font-size: 11px;
-  color: var(--text-2);
-}
-.hd-trend-legend span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.hd-trend-legend i {
-  display: inline-block;
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-}
-.hd-trend-svg {
-  width: 100%;
-  height: 160px;
-  overflow: visible;
-}
-.hd-trend-grid {
-  stroke: var(--glass-border);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-}
-.hd-trend-axis {
-  stroke: var(--text-2);
-  stroke-width: 1;
-  opacity: 0.3;
-}
-.hd-trend-line-sport {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.hd-trend-line-weight {
-  fill: none;
-  stroke: var(--accent-2);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.hd-trend-dot {
-  stroke: #000;
-  stroke-width: 1.5;
-}
-.hd-trend-label {
-  font-size: 9px;
-  fill: var(--text-2);
-  text-anchor: middle;
-}
-.hd-trend-empty {
-  text-align: center;
-  color: var(--text-2);
-  font-size: 12px;
-  padding: 20px 0;
-}
 
 .modal-mask {
   position: fixed;
@@ -1146,61 +1065,6 @@ body {
 .modal input[type="datetime-local"] { color-scheme: dark; }
 .modal ::-webkit-calendar-picker-indicator { filter: invert(0.8); opacity: 0.8; }
 
-/* 健康记录输入框：放大、文字用主题色 */
-.health-input {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(61, 220, 151, 0.3);
-  border-radius: 12px;
-  padding: 14px 15px;
-  color: var(--accent);          /* 输入文字为主题色 */
-  font-size: 18px;
-  font-weight: 600;
-  outline: none;
-  font-family: inherit;
-  transition: all 0.2s;
-  color-scheme: dark;
-  -webkit-appearance: none;
-}
-.health-input::placeholder { color: rgba(61, 220, 151, 0.5); font-weight: 400; }
-.health-input:focus {
-  border-color: var(--accent);
-  background: rgba(61, 220, 151, 0.08);
-  box-shadow: 0 0 0 3px rgba(61, 220, 151, 0.15);
-}
-.health-input::-webkit-outer-spin-button,
-.health-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.form-col { min-width: 0; }
-/* 日期+时间 左右两栏（左边日期、右边时间），各自不过宽、不超出屏幕 */
-.dt-pair {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-.dt-pair input[type="date"],
-.dt-pair input[type="time"] {
-  flex: 1;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
-  box-sizing: border-box;
-}
-/* 健康记录里的 date/time 输入框：满宽且不超出屏幕 */
-.health-input[type="time"],
-.health-input[type="date"] {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
 /* datetime-local 等时间输入框自带固有最小宽度，双列并排时容易溢出容器/超出屏幕。
    这里让含时间输入框的那一列独占整行（纵向堆叠），从根上避免横向溢出；
    普通下拉/文本列仍可并排。 */
@@ -2091,38 +1955,6 @@ body.theme-light .search-bar input {
 }
 .profile-body .form-label { text-align: left; }
 
-/* ================= 健康管理页 ================= */
-.health-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  padding: 4px 14px 10px;
-}
-.health-tab {
-  padding: 8px 6px;
-  border-radius: 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  color: var(--text-2);
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.health-tab.active {
-  background: linear-gradient(135deg, rgba(61, 220, 151, 0.2), rgba(74, 214, 255, 0.1));
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-}
-.health-panel { display: none; padding: 0 14px 20px; }
-.health-panel.active { display: block; animation: fadeIn 0.25s ease; }
 
 /* ========== 户外露营 ========== */
 /* 露营装备看板（与运动计划看板一致：圆角/边距） */
@@ -2145,6 +1977,17 @@ body.theme-light .search-bar input {
   word-break: break-word;
   white-space: pre-wrap;
   margin-bottom: 10px;
+}
+.camping-gear-edit {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+  margin-top: 6px;
+  background: none;
+  border: none;
+  font-family: inherit;
 }
 
 /* 露营看板（与运动时长看板一致：圆角/边距） */
@@ -2191,59 +2034,8 @@ body.theme-light .search-bar input {
 }
 .camping-history-del:hover { color: var(--danger); }
 
-
-/* 计划卡片 */
-.health-plan {
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  margin-bottom: 10px;
-}
-.health-plan h4 {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-0);
-  margin: 0 0 6px;
-}
-.health-plan-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: var(--text-2);
-  margin-bottom: 4px;
-  line-height: 1.6;
-}
-.health-plan-row span { color: var(--text-1); }
-.health-plan-edit {
-  display: block;
-  text-align: right;
-  font-size: 11px;
-  color: var(--accent);
-  cursor: pointer;
-  margin-top: 6px;
-  background: none;
-  border: none;
-  font-family: inherit;
-}
-.health-plan-empty {
-  text-align: center;
-  padding: 12px;
-  color: var(--text-2);
-  font-size: 13px;
-}
-.health-plan-empty button {
-  margin-top: 6px;
-  padding: 6px 14px;
-  border-radius: 10px;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* 录入按钮 */
-.health-log-btn {
+/* 户外记录按钮 */
+.camping-log-btn {
   width: 100%;
   margin-bottom: 10px;
   display: inline-flex;
@@ -2251,98 +2043,7 @@ body.theme-light .search-bar input {
   justify-content: center;
   gap: 6px;
 }
-.health-log-btn svg { display: block; flex-shrink: 0; }
-
-/* 周图表 */
-.health-chart {
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-}
-.health-chart h4 {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-1);
-  margin: 0 0 8px;
-  text-align: center;
-}
-.health-bars {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 70px;
-}
-.health-bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-.health-bar-stack {
-  width: 10px;
-  height: 50px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 3px;
-  position: relative;
-  overflow: hidden;
-}
-.health-bar-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--accent);
-  border-radius: 3px;
-  transition: height 0.3s;
-}
-.health-bar-label {
-  font-size: 9px;
-  color: var(--text-2);
-  text-align: center;
-  white-space: nowrap;
-}
-.health-chart-empty {
-  text-align: center;
-  color: var(--text-2);
-  font-size: 12px;
-  padding: 16px;
-}
-
-/* 历史记录 */
-.health-history h4 {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-1);
-  margin: 0 0 8px;
-}
-.health-log-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  margin-bottom: 6px;
-  font-size: 13px;
-}
-.health-log-date {
-  color: var(--text-2);
-  font-size: 11px;
-}
-.health-log-val {
-  color: var(--text-0);
-  font-weight: 600;
-}
-.health-log-del {
-  background: none;
-  border: none;
-  color: var(--danger);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 6px;
-}
+.camping-log-btn svg { display: block; flex-shrink: 0; }
 
 /* ================= 总览分隔线 ================= */
 .overview-divider {
@@ -2367,9 +2068,6 @@ body.theme-light .search-bar input {
 
 /* ================= PC端新增面板（移动端隐藏） ================= */
 .ai-assistant { display: none; }
-.overview-bottom-row { display: flex; flex-direction: column; }
-/* 健康看板与上方项目看板之间间距加大 */
-.overview-health-panel { margin-top: 22px; }
 /* 项目看板 / 健康看板 标题：移动端也显示 */
 .panel-head {
   display: flex;
@@ -2388,98 +2086,7 @@ body.theme-light .search-bar input {
   color: var(--text-2);
 }
 
-/* ================= 健康看板 ================= */
-.health-dashboard {
-  /* 取消最外层整体底框：仅作为包裹容器，背景/边框交由内部三个 .hd-section 呈现 */
-  margin-bottom: 10px;
-}
-/* 健康面板内部三个分区：指标 / 睡眠 / 趋势+按钮，各自独立面板 */
-.hd-section {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  margin-bottom: 10px;
-}
-.hd-section:last-child { margin-bottom: 0; }
-.hd-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.hd-card {
-  flex: 1;
-  background: rgba(255,255,255,0.03);
-  border-radius: 10px;
-  padding: 10px;
-  text-align: center;
-  min-width: 0;
-}
-.hd-card-icon { font-size: 22px; margin-bottom: 4px; display: flex; justify-content: center; align-items: center; min-height: 24px; }
-.hd-card-icon svg { display: block; color: var(--text-1); }
-.hd-card-val {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-0);
-  line-height: 1.2;
-}
-.hd-card-label {
-  font-size: 10px;
-  color: var(--text-2);
-  margin-top: 2px;
-}
-.hd-card.accent .hd-card-val { color: var(--accent); }
-/* 运动计划 / 今日打卡：达标绿色，不达标橙黄 */
-.hd-card-val.ok { color: var(--accent); }
-.hd-card-val.warn { color: var(--warning); }
-
-.hd-plan {
-  font-size: 12px;
-  color: var(--text-2);
-  padding: 4px 0;
-  line-height: 1.6;
-}
-.hd-plan strong { color: var(--text-1); }
-
-.hd-quick-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-.hd-quick-btn {
-  flex: 1;
-  padding: 8px;
-  border-radius: 10px;
-  border: 1px solid var(--glass-border);
-  background: var(--glass-bg);
-  color: var(--text-1);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: inherit;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-.hd-quick-btn:hover { background: rgba(255,255,255,0.06); }
-.hd-quick-btn:active { transform: scale(0.97); }
-.hd-quick-btn svg { display: block; flex-shrink: 0; }
-.hd-quick-btn.sport { border-color: rgba(61, 220, 151, 0.4); color: var(--accent); }
-.hd-quick-btn.weight { border-color: rgba(74, 214, 255, 0.4); color: var(--accent-2); }
-.hd-quick-btn.sleep { border-color: rgba(167, 139, 250, 0.4); color: #a78bfa; }
-
 /* ================= 睡眠柱状图 ================= */
-.hd-sleep-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--accent);
-  text-align: center;
-  margin: 4px 0 16px;
-}
 .sleep-chart-wrap {
   position: relative;
   padding: 0 4px;
@@ -2551,139 +2158,6 @@ body.theme-light .search-bar input {
   white-space: nowrap;
 }
 
-/* ================= 习惯打卡网格 ================= */
-.habit-add-bar {
-  padding: 0 14px 10px;
-}
-/* 早睡/早起 预设习惯区（位于添加习惯按钮上方） */
-.habit-preset {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 0 0 10px;   /* 无左右内边距：总宽与「添加习惯」按钮保持一致 */
-}
-.habit-preset-label {
-  grid-column: 1 / -1;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-1);
-  margin: 4px 0 2px;
-}
-.habit-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 0 0 20px;   /* 无左右内边距：总宽与「添加习惯」按钮保持一致 */
-}
-.habit-card {
-  background: #1f2125;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  text-align: center;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  cursor: pointer;
-  transition: all 0.2s;
-  position: relative;
-}
-.habit-card:active { transform: scale(0.97); }
-.habit-card.done {
-  border-color: rgba(61, 220, 151, 0.4);
-  background: rgba(61, 220, 151, 0.12);
-}
-.habit-card-icon {
-  font-size: 32px;
-  margin-bottom: 6px;
-}
-.habit-card-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-0);
-  margin-bottom: 4px;
-}
-.habit-card-goal {
-  font-size: 11px;
-  color: var(--text-2);
-}
-.habit-card-check {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.5px solid var(--text-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  color: transparent;
-}
-.habit-card.done .habit-card-check {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #000;
-}
-.habit-card-actions {
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 10px;
-}
-.habit-card-actions button {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border);
-  color: var(--text-1);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 6px;
-  transition: all 0.15s;
-}
-.habit-card-actions .habit-card-edit:hover { color: var(--accent); border-color: var(--accent); }
-.habit-card-actions .habit-card-del:hover { color: var(--danger); border-color: var(--danger); }
-
-.habit-icon-pick {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px 0;
-}
-.habit-icon-pick span {
-  font-size: 22px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.15s;
-}
-.habit-icon-pick span:hover { background: rgba(255,255,255,0.08); }
-.habit-icon-pick span.picked { background: rgba(61, 220, 151, 0.2); }
-
-/* 习惯类型选择器 */
-.form-select {
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--glass-bg);
-  color: var(--text-0);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  font-size: 16px;   /* ≥16px 防止 iOS 聚焦缩放 */
-  margin-bottom: 12px;
-  -webkit-appearance: none;
-  appearance: none;
-  cursor: pointer;
-}
-.form-select:focus { outline: none; border-color: var(--accent); }
-
-.habit-type-fields { margin-top: 8px; }
-
-.habit-card-progress {
-  display: block;
-  font-size: 11px;
-  color: var(--accent);
-  margin-top: 2px;
-}
 
 .form-hint {
   margin: 4px 0 8px;
@@ -2693,24 +2167,6 @@ body.theme-light .search-bar input {
 }
 
 /* ================= 健康看板作息表格 ================= */
-.hd-sleep-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 11px;
-  margin-top: 8px;
-}
-.hd-sleep-table th {
-  color: var(--text-2);
-  font-weight: 500;
-  padding: 4px 2px;
-  border-bottom: 1px solid var(--glass-border);
-}
-.hd-sleep-table td {
-  padding: 4px 2px;
-  text-align: center;
-  color: var(--text-1);
-}
-.hd-sleep-table td.dim { color: var(--text-2); }
 
 /* ================= 柱状图图例弱化 ================= */
 .chart-legend {
@@ -3136,18 +2592,6 @@ body.theme-light .search-bar input {
   .ai-assistant { display: none; }
 
   /* ========== 底部双栏：项目 + 健康（窄桌面上下排列） ========== */
-  .overview-bottom-row {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin: 0 0 16px;
-  }
-  .overview-projects-panel,
-  .overview-health-panel {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
   .panel-head {
     display: flex;
     align-items: center;
@@ -3183,19 +2627,6 @@ body.theme-light .search-bar input {
   .project-card .card-body { font-size: 12px; }
   .project-card .card-title { font-size: 13px; }
 
-  /* ========== 健康看板（PC重排） ========== */
-  .overview-health-panel .health-dashboard {
-    flex: 1;
-  }
-  .health-dashboard .hd-row {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  .hd-card {
-    padding: 12px;
-    border-radius: var(--radius-sm);
-  }
-  .hd-trend-svg { height: 140px; }
 
   /* 搜索栏 */
   /* 搜索栏：PC端隐藏页面内搜索，使用顶部全局搜索 */
@@ -3227,32 +2658,6 @@ body.theme-light .search-bar input {
     gap: 16px;
   }
 
-  /* ========== 健康页 ========== */
-  .page-health .section-header h2 { font-size: 20px; }
-  .health-tabs {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .health-tab {
-    padding: 10px 8px;
-    font-size: 14px;
-    border-radius: 10px;
-  }
-  .health-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-  .health-panel .health-plan,
-  .health-panel .health-chart { grid-column: 1 / -1; }
-  .health-panel .health-log-btn {
-    grid-column: 1 / -1;
-    width: fit-content;
-    margin: 0 auto;
-  }
-  .habit-grid { grid-template-columns: repeat(4, 1fr); }
 
   /* ========== 弹窗 ========== */
   .modal {
@@ -3333,11 +2738,6 @@ body.theme-light .search-bar input {
   .today-preview { display: flex; }
 
   /* 大屏底部：项目 + 健康左右并排 */
-  .overview-bottom-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-  }
   .overview-projects-panel .projects-row {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -3350,7 +2750,4 @@ body.theme-light .search-bar input {
 
   .settings-body { max-width: 800px; }
 
-  .health-panel { grid-template-columns: 1fr 1fr 1fr; }
-  .health-panel .health-plan,
-  .health-panel .health-chart { grid-column: span 2; }
 }
