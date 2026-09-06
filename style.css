@@ -1059,11 +1059,47 @@ body {
 }
 .modal textarea { resize: none; }
 .modal select option { background: var(--bg-1); }
+/* 露营弹窗下拉框（交通/人员/评级/类别） */
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--glass-bg);
+  color: var(--text-0);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  font-size: 16px;   /* ≥16px 防止 iOS 聚焦缩放 */
+  margin-bottom: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.form-select:focus { outline: none; border-color: var(--accent); }
 /* date/time/datetime-local 强制深色主题，避免背景呈白色 */
 .modal input[type="date"],
 .modal input[type="time"],
 .modal input[type="datetime-local"] { color-scheme: dark; }
 .modal ::-webkit-calendar-picker-indicator { filter: invert(0.8); opacity: 0.8; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.form-col { min-width: 0; }
+/* 日期+时间 左右两栏（左边日期、右边时间），各自不过宽、不超出屏幕 */
+.dt-pair {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.dt-pair input[type="date"],
+.dt-pair input[type="time"] {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 /* datetime-local 等时间输入框自带固有最小宽度，双列并排时容易溢出容器/超出屏幕。
    这里让含时间输入框的那一列独占整行（纵向堆叠），从根上避免横向溢出；
@@ -2652,6 +2688,8 @@ body.theme-light .search-bar input {
 
   /* ========== 项目页 ========== */
   .page-projects .section-header h2 { font-size: 20px; }
+  /* ========== 户外页 ========== */
+  .page-health .section-header h2 { font-size: 20px; }
   .project-full-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
