@@ -2755,7 +2755,10 @@ body.theme-light .search-bar input {
 @media (min-width: 1400px) {
 
   .tab-bar { width: 240px; min-width: 240px; max-width: 240px; }
-  .top-bar, .app-main, .settings-page { left: 240px; }
+  /* .app-main 是 #appShell 的 flex 子项，不应设 left（会与 position:relative 叠加偏移）；
+     .settings-page 是 position:fixed 需要 left 定位。 */
+  .top-bar { left: 240px; }
+  .settings-page { left: 240px; }
   .app-main, .settings-page { max-width: calc(100vw - 240px); }
   .fab-area { left: 240px; }
 
