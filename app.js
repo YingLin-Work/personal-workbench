@@ -954,7 +954,6 @@ function getSortedProjects(projects) {
 
 function renderProjects() {
   const projects = getSortedProjects(state.projects || []);
-  document.getElementById('projCount').textContent = projects.length;
 
   // 顶部汇总：总项目 / 进行中 / 已完成 / 已暂停
   const active = projects.filter(p => p.status === 'active').length;
