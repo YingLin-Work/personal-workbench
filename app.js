@@ -222,8 +222,10 @@ document.addEventListener('click', e => {
   if (!fabOpen) return;
   const fabMenu = document.getElementById('fabMenu');
   const fabBtn = document.getElementById('fabBtn');
-  if (fabMenu && fabMenu.contains(e.target)) return;   // 点菜单项内不收
-  if (fabBtn && fabBtn.contains(e.target)) return;      // 点加号按钮内不收（toggle 自己处理）
+  const sidebarAddBtn = document.getElementById('sidebarAddBtn');
+  if (fabMenu && fabMenu.contains(e.target)) return;        // 点菜单项内不收
+  if (fabBtn && fabBtn.contains(e.target)) return;          // 点移动端加号内不收（toggle 自己处理）
+  if (sidebarAddBtn && sidebarAddBtn.contains(e.target)) return; // 点 PC 端「快速创建」内不收
   closeFabMenu();
 });
 
