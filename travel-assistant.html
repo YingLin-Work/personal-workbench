@@ -2848,6 +2848,67 @@ function confirmDest(){
 }
 
 /* ============================================================
+   周边城市联动补齐：
+   行程天数×3 超过库内真实景点数时，从 200 城行程库中
+   找地理最近的城市（≤200km，最多 3 城）追加其景点，
+   用"真实景点 + 城际衔接"替代空洞的自由安排卡
+   ============================================================ */
+function distKm(a,b){
+  if(!a||!b||!a.lat||!a.lng||!b.lat||!b.lng)return Infinity;
+  var R=6371,la=(b.lat-a.lat)*Math.PI/180,lo=(b.lng-a.lng)*Math.PI/180;
+  var s=Math.sin(la/2)*Math.sin(la/2)+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(lo/2)*Math.sin(lo/2);
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function expandPois(pois, days, excludeCities){
+  var target=days*3; /* 每天 3 个真实景点的目标 */
+  var sights=pois.filter(function(p){return p.cat!=='food'&&p.cat!=='transport'});
+  if(sights.length>=target)return pois;
+  var out=pois.slice();
+  var linkCities=[];
+  /* 以行程最后一个点为基准找邻近城市 */
+  var base=out[out.length-1]||out[0];
+  var used={};(excludeCities||[]).forEach(function(c){used[c]=1});
+  var need=target-sights.length;
+  /* 候选：库内其他城市，按距离排序 */
+  var cands=Object.keys(destPOIs).filter(function(c){return !used[c]});
+  cands.sort(function(a,b){
+    var pa=destPOIs[a].pois[0],pb=destPOIs[b].pois[0];
+    return distKm(base,pa)-distKm(base,pb);
+  });
+  var existing={};out.forEach(function(p){existing[p.name]=1});
+  for(var ci=0;ci<cands.length&&need>0&&linkCities.length<3;ci++){
+    var c=cands[ci];
+    var cp=destPOIs[c].pois||[];
+    if(cp.length<3)continue;
+    var center=cp[0];
+    var d=distKm(base,center);
+    if(d>200)break; /* 超过 200km 不再联动 */
+    /* 该城可追加的景点（去重，跳过交通点） */
+    var add=cp.filter(function(p){return p.cat!=='transport'&&!existing[p.name]});
+    var addSights=add.filter(function(p){return p.cat!=='food'}).length;
+    if(addSights<2)continue;
+    /* 城际衔接卡 */
+    var fromCity=(excludeCities&&excludeCities.length)?excludeCities[excludeCities.length-1]:'本城';
+    out.push({
+      time:'联动', name:fromCity+' → '+c, cat:'transport',
+      lat:center.lat, lng:center.lng,
+      addr:'城际高铁/大巴', budget:0, dur:Math.max(1,Math.round(d/200*10)/10)+'h',
+      desc:'周边联动：'+fromCity+'核心景点已排完，前往邻近的'+c+'（约'+Math.round(d)+'公里）串联联游，高铁或城际大巴均可到达。',
+      transit:'切换城市 · 建议高铁/城际'
+    });
+    add.forEach(function(p){existing[p.name]=1;out.push(p);});
+    linkCities.push(c);
+    used[c]=1;
+    need-=addSights;
+    /* 基准点更新为联动城市最后一个景点，继续找下一近邻 */
+    base=out[out.length-1];
+    excludeCities=excludeCities.concat([c]);
+  }
+  out.linkCities=linkCities;
+  return out;
+}
+
+/* ============================================================
    多目的地综合旅游线路：
    把多个目的地按地理邻近排序，串成一条不绕路的综合行程，
    城市间插入"高铁衔接阶段"，生成统一的分天攻略 + 全图打点连线
@@ -2897,8 +2958,11 @@ function renderComboItinerary(destsIn){
   var realDays=Math.max(order.length, daysIn);
   curDest=order.join('→');
   var themeList=order.join(' · ');
+  // 周边城市联动补齐：各城景点合计不足以支撑天数×3 时，从最近城市串联补充
+  var expanded=expandPois(combo, realDays, order);
+  var linkTxt2=(expanded.linkCities&&expanded.linkCities.length)?' · 联动 '+expanded.linkCities.join('/'):'';
   document.getElementById('day-hdr').innerHTML=
-    '<h2>综合线路 · '+order.join('→')+'</h2>'+
+    '<h2>综合线路 · '+order.join('→')+linkTxt2+'</h2>'+
     '<p class="theme">'+themeList+' 串联 · 全程公共交通衔接</p>'+
     '<span class="day-budget">共 '+order.length+' 城 · 分 '+realDays+' 天 · 综合行程</span>';
   var legendBox=document.getElementById('legend');
@@ -2908,12 +2972,12 @@ function renderComboItinerary(destsIn){
   });
 
   // 渲染综合地图（全城打点 + 连线）——即使地图异常也保证下方卡片正常渲染
-  try{ renderMap(order[0]+'综合线路',combo,'串联线路'); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(34.7,114.3)); }catch(e2){} }
+  try{ renderMap(order[0]+'综合线路',expanded,'串联线路'); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(34.7,114.3)); }catch(e2){} }
   // 渲染综合卡片（按天分段，含各城点位与衔接）
-  renderCards(combo, realDays);
-  var totalBudget=combo.reduce(function(s,p){return s+(p.budget||0)},0);
+  renderCards(expanded, realDays);
+  var totalBudget=expanded.reduce(function(s,p){return s+(p.budget||0)},0);
   document.getElementById('day-total').innerHTML=
-    '<span>'+order.length+' 城 · '+combo.length+' 个点位 · '+realDays+' 天</span><b>'+fmtMoney(totalBudget)+'</b>';
+    '<span>'+order.length+' 城 · '+expanded.length+' 个点位 · '+realDays+' 天</span><b>'+fmtMoney(totalBudget)+'</b>';
 }
 /* ============================================================
    核心计算：根据出发城市 × 目的地，折中推荐
@@ -3139,23 +3203,26 @@ function renderDestItinerary(dest){
   // 更新日标题
   var daysEl2=document.getElementById('days-input');
   var daysN=daysEl2?parseInt(daysEl2.value,10)||1:1;
+  // 周边城市联动补齐：天数×3 超过本城景点数时，从最近城市串联真实景点
+  var expanded=expandPois(d.pois, daysN, [dest]);
+  var linkTxt=(expanded.linkCities&&expanded.linkCities.length)?' · 联动 '+expanded.linkCities.join('/'):'';
   document.getElementById('day-hdr').innerHTML=
-    '<h2>'+dest+' · '+(d.theme||'一日游')+'</h2>'+
+    '<h2>'+dest+' · '+(d.theme||'一日游')+linkTxt+'</h2>'+
     '<p class="theme">全程公共交通 · 分 '+daysN+' 天分段游览</p>'+
-    '<span class="day-budget">市内预算 '+fmtMoney(d.pois.reduce(function(s,p){return s+p.budget},0))+' · '+daysN+' 天</span>';
+    '<span class="day-budget">市内预算 '+fmtMoney(expanded.reduce(function(s,p){return s+p.budget},0))+' · '+daysN+' 天</span>';
   var legendBox=document.getElementById('legend');
   legendBox.innerHTML='';
   ['scenic','food','culture','shopping','transport'].forEach(function(k){
     legendBox.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:'+cats[k].color+'"></span>'+cats[k].name+'</div>';
   });
   // 渲染地图 POI（即使地图异常也保证下方卡片正常渲染）
-  try{ renderMap(dest,d.pois,d.theme); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(d.pois[0].lat,d.pois[0].lng)); }catch(e2){} }
+  try{ renderMap(dest,expanded,d.theme); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(d.pois[0].lat,d.pois[0].lng)); }catch(e2){} }
   // 读取天数并按天分段渲染卡片
   var daysEl=document.getElementById('days-input');
   var days=daysEl?parseInt(daysEl.value,10)||1:1;
-  renderCards(d.pois, days);
+  renderCards(expanded, days);
   document.getElementById('day-total').innerHTML=
-    '<span>'+dest+' 共 '+d.pois.length+' 个核心点位 · 分 '+days+' 天游览</span><b>'+fmtMoney(d.pois.reduce(function(s,p){return s+p.budget},0))+'</b>';
+    '<span>'+dest+' 共 '+expanded.length+' 个点位'+(linkTxt?'（含周边联动）':'')+' · 分 '+days+' 天游览</span><b>'+fmtMoney(expanded.reduce(function(s,p){return s+p.budget},0))+'</b>';
 }
 
 /* ============================================================
@@ -3368,14 +3435,26 @@ function isNightPOI(p){
 }
 var hotelCat={name:"住宿",color:"#8B5CF6",bg:"rgba(139,92,246,.1)"};
 var freeCat={name:"自由",color:"#0EA5E9",bg:"rgba(14,165,233,.1)"};
-/* 自由安排推荐模板（库内景点不足时按天轮换补齐） */
+/* 自由安排推荐模板（库内景点不足时按天轮换补齐，可循环取用） */
 var freeTpl=[
   {name:"老城街巷自由漫步",dur:"2h",desc:"上午在老城街巷随意漫步，探访本地生活气息，途中顺访小巷咖啡馆与老字号，节奏轻松随性。"},
   {name:"城市博物馆 / 美术馆",dur:"2h",desc:"深度参观城市博物馆或美术馆，了解当地历史文化。多数场馆周一闭馆，建议提前查询开放时间并预约。"},
   {name:"本地市集 / 特色商圈",dur:"1.5h",desc:"逛本地市集或特色商圈，挑选伴手礼，感受城市烟火气，累了就地找家茶馆或咖啡馆小坐。"},
   {name:"滨水绿道 / 城市公园",dur:"1.5h",desc:"沿滨水绿道或城市公园休闲漫步，适合拍照与放松，也是本地人最爱的休憩地。"},
   {name:"夜市 / 地标夜景",dur:"2h",desc:"傍晚前往夜市或地标夜景，品尝街头小吃，为当天行程收尾。"},
-  {name:"近郊半日游",dur:"3h",desc:"前往近郊景点半日往返，可在高铁站/客运站查询班次，注意预留充足返程时间。"}
+  {name:"近郊半日游",dur:"3h",desc:"前往近郊景点半日往返，可在高铁站/客运站查询班次，注意预留充足返程时间。"},
+  {name:"清晨本地早市",dur:"1.5h",desc:"赶个早去本地早市，豆浆油条配小吃，看城市最鲜活的晨间烟火，顺便体验本地人的日常节奏。"},
+  {name:"古玩字画 / 文创街区",dur:"2h",desc:"逛古玩市场或文创街区，淘旧书字画、手作文创，即使不买，感受市井文化也很有意思。"},
+  {name:"寺庙古刹上香祈福",dur:"1.5h",desc:"访一座本地古寺，庭院清幽适合静心，留意大殿开放时间，着装宜端庄。"},
+  {name:"制高点俯瞰全城",dur:"1.5h",desc:"登电视塔、山丘或高楼观景台，俯瞰城市全景，黄昏时分光线最佳，适合拍照打卡。"},
+  {name:"百年名校校园漫步",dur:"1.5h",desc:"走进本地百年学府，民国建筑与林荫道相映，校园里走走停停，感受书香氛围（部分校园需预约入校）。"},
+  {name:"环湖 / 滨江骑行",dur:"2h",desc:"租一辆共享单车沿湖或沿江骑行，串联多个景点，微风拂面，是性价比最高的游览方式。"},
+  {name:"温泉 / 汗蒸放松",dur:"2h",desc:"安排一次温泉或汗蒸，缓解连日暴走的疲劳，记得带好泳衣与洗漱用品。"},
+  {name:"老字号下午茶",dur:"1.5h",desc:"找一家本地老字号茶楼或甜品店，点几样招牌点心慢慢吃，体验本地人的悠闲午后。"},
+  {name:"茶馆听戏 / 剧场演出",dur:"2h",desc:"查询本地茶馆或小剧场的演出场次，听一段地方戏或相声，是最地道的夜生活打开方式。"},
+  {name:"创意园区拍照扫街",dur:"1.5h",desc:"老厂房改造的创意园区，涂鸦墙与咖啡馆出片率极高，适合慢逛拍照，顺便歇脚。"},
+  {name:"特色小吃街扫街",dur:"1.5h",desc:"本地人推荐的小吃街逐摊试吃，一人食友好，记得留肚子少量多样。"},
+  {name:"湿地公园 / 植物园",dur:"2h",desc:"去湿地公园或植物园呼吸自然空气，四季各有景致，晨间与傍晚光线最柔和。"}
 ];
 function renderCards(pois, days){
   days=days||1;
@@ -3420,9 +3499,9 @@ function renderCards(pois, days){
       if(a.type==='sight')cnt++;
     }
     var nReal=atoms.filter(function(x){return x.type==='sight'}).length;
-    /* 真实景点不足 3 个的天，用"自由安排"推荐卡补齐，保证每天有完整行程 */
+    /* 真实景点不足 3 个的天，用"自由安排"推荐卡补齐（模板可循环），保证每天有完整行程 */
     var fillers=[];
-    for(var fj=0;fj<Math.max(0,3-nReal)&&freeIdx<freeTpl.length;fj++)fillers.push(freeTpl[freeIdx++]);
+    for(var fj=0;fj<Math.max(0,3-nReal);fj++)fillers.push(freeTpl[freeIdx++%freeTpl.length]);
     var hasPois=nReal>0||fillers.length>0;
     var items=[]; /* {p,kind,t} kind: tr/sight/lunch/hotel */
     if(hasPois){
