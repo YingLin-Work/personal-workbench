@@ -4015,8 +4015,9 @@ function renderCards(pois, days){
               .map(function(x){return x.p;});
         run.forEach(function(p){
           var tt=transitMin(prev,p);
-          /* 午餐窗口 11:40-14:00：先插午餐再进景点（超 14:00 不再插午餐，交给兜底逻辑） */
-          if(!lunchDone&&curT+tt>=11*60+40&&curT+tt<=14*60){
+          /* 午餐窗口 11:40-14:00：先插午餐再进景点（超 14:00 不再插午餐，交给兜底逻辑）
+             另加 curT<13:00 保护：curT 已过中午仍硬插 13:00 午餐会出现在晚间景点之后，时间倒序 */
+          if(!lunchDone&&curT<13*60&&curT+tt>=11*60+40&&curT+tt<=14*60){
             var lt=curT+Math.min(tt,20);
             var best=null,bd=Infinity;
             pois.forEach(function(f){
@@ -4069,8 +4070,10 @@ function renderCards(pois, days){
         items.push({p:{name:tp.name,cat:'free',dur:tp.dur,synthetic:true,desc:tp.desc},kind:'free',t:fmtHM(curT)});
         curT+=parseDurMin(tp.dur)+15;
       });
-      /* 兜底午餐（全天未插入午餐时，补在 11:30-13:00 窗口） */
-      if(!lunchDone){
+      /* 兜底午餐（全天未插入午餐时，补在 11:30-13:00 窗口）
+         保护：curT≥13:00 表示当天已过午餐窗口，硬塞 13:00 午餐会跑到晚间景点之后，
+         造成"20:00 后跟着 13:00"时间倒序。已晚的天跳过午餐，仅依赖景点内美食/晚餐自然覆盖 */
+      if(!lunchDone&&curT<13*60){
         var lt2=Math.min(Math.max(curT,11*60+30),13*60);
         var best2=null,bd2=Infinity;
         pois.forEach(function(f,fi){
@@ -4086,10 +4089,13 @@ function renderCards(pois, days){
         }
         curT=lt2+60;
       }
-      /* 住宿区域推荐（基于当天最后景点） */
-      var ht=curT+20;
-      var hn=((prev&&prev.name)?prev.name.replace(/·.*/,'')+' 一带':'市中心/车站一带');
-      items.push({p:{name:hn,cat:'hotel',dur:'休整',synthetic:true,anchor:prev},kind:'hotel',t:fmtHM(ht)});
+      /* 住宿区域推荐（基于当天最后景点）
+         保护：curT<17:00（行程太早）或 curT≥22:00（已深夜）则不推住宿卡，避免显示错位 */
+      if(curT>=17*60&&curT<22*60){
+        var ht=curT+20;
+        var hn=((prev&&prev.name)?prev.name.replace(/·.*/,'')+' 一带':'市中心/车站一带');
+        items.push({p:{name:hn,cat:'hotel',dur:'休整',synthetic:true,anchor:prev},kind:'hotel',t:fmtHM(ht)});
+      }
       anchor=prev;
     }
     segments.push({day:s+1,items:items,hasPois:hasPois,nSight:nReal,nFree:fillers.length});
