@@ -3884,9 +3884,9 @@ function parseDurMin(s){ /* "2h"/"1.5h"/"到达" → 分钟 */
   if(m)return Math.round(parseFloat(m[1])*60);
   return 30;
 }
-function fmtHM(min){ /* 分钟 → "HH:MM" */
+function fmtHM(min){ /* 分钟 → "HH:MM"，超过 24h 自动取模，防止出现 27:43 等隔天时间 */
   min=Math.max(0,Math.round(min));
-  var h=Math.floor(min/60),m=min%60;
+  var h=Math.floor(min/60)%24,m=min%60;
   return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
 }
 /* 两点间市内交通分钟（Haversine × 25km/h 综合打车/公交，10~60min） */
@@ -4002,6 +4002,8 @@ function renderCards(pois, days){
           tr.dispTime=fmtHM(curT);
           items.push({p:tr,kind:'tr'});
           curT+=Math.max(60,parseDurMin(tr.dur))+30; /* 城际/到站缓冲 */
+          /* 跨城后整体不晚于 22:30，避免到达/衔接卡时间显示成次日 0X:XX（之前曾出现 00:19 / 01:04） */
+          if(curT>22*60+30)curT=22*60+30;
           prev=tr;i++;
           continue;
         }
@@ -4014,6 +4016,8 @@ function renderCards(pois, days){
               .sort(function(a,b){if(a.n!==b.n)return a.n?1:-1;return a.idx-b.idx;})
               .map(function(x){return x.p;});
         run.forEach(function(p){
+          /* 22:00 后不再推景点/交通，避免累加跨越隔天（之前会出现 27:43 之类的隔天时间） */
+          if(curT>=22*60)return;
           var tt=transitMin(prev,p);
           /* 午餐窗口 11:40-14:00：先插午餐再进景点（超 14:00 不再插午餐，交给兜底逻辑）
              另加 curT<13:00 保护：curT 已过中午仍硬插 13:00 午餐会出现在晚间景点之后，时间倒序 */
@@ -4046,7 +4050,7 @@ function renderCards(pois, days){
       /* 夜市/夜景类放到当天最后；当天时间过晚则不再追加 */
       fillers.sort(function(a,b){return (a.name.indexOf('夜市')>=0?1:0)-(b.name.indexOf('夜市')>=0?1:0);});
       fillers.forEach(function(tp){
-        if(curT>17*60+30)return; /* 17:30 后不再安排新项目 */
+        if(curT>=22*60)return; /* 22:00 后不再追加任何项目（22:00 截断） */
         var tt=30;
         if(!lunchDone&&curT+tt>=11*60+40&&curT+tt<=14*60){
           var lt=curT+Math.min(tt,20);
