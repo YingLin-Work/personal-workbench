@@ -3459,10 +3459,10 @@ function renderComboItinerary(destsIn){
     legendBox.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:'+cats[k].color+'"></span>'+cats[k].name+'</div>';
   });
 
+  // 先渲染综合卡片（得出哪些点位真正排入了行程），再据此渲染地图，保证地图打点与行程一致
+  var usedIdx=renderCards(expanded, realDays);
   // 渲染综合地图（全城打点 + 连线）——即使地图异常也保证下方卡片正常渲染
-  try{ renderMap(order[0]+'综合线路',expanded,'串联线路'); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(34.7,114.3)); }catch(e2){} }
-  // 渲染综合卡片（按天分段，含各城点位与衔接）
-  renderCards(expanded, realDays);
+  try{ renderMap(order[0]+'综合线路',expanded,'串联线路',usedIdx); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(34.7,114.3)); }catch(e2){} }
   var totalBudget=expanded.reduce(function(s,p){return s+(p.budget||0)},0);
   document.getElementById('day-total').innerHTML=
     '<span>'+order.length+' 城 · '+expanded.length+' 个点位 · '+realDays+' 天</span><b>'+fmtMoney(totalBudget)+'</b>';
@@ -3703,12 +3703,12 @@ function renderDestItinerary(dest){
   ['scenic','food','culture','shopping','transport'].forEach(function(k){
     legendBox.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:'+cats[k].color+'"></span>'+cats[k].name+'</div>';
   });
-  // 渲染地图 POI（即使地图异常也保证下方卡片正常渲染）
-  try{ renderMap(dest,expanded,d.theme); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(d.pois[0].lat,d.pois[0].lng)); }catch(e2){} }
-  // 读取天数并按天分段渲染卡片
+  // 先渲染卡片（得出哪些点位真正排入了行程），再据此渲染地图，保证地图打点与行程一致
   var daysEl=document.getElementById('days-input');
   var days=daysEl?parseInt(daysEl.value,10)||1:1;
-  renderCards(expanded, days);
+  var usedIdx=renderCards(expanded, days);
+  // 渲染地图 POI（即使地图异常也保证下方卡片正常渲染）
+  try{ renderMap(dest,expanded,d.theme,usedIdx); }catch(e){ try{ if(typeof TMap!=='undefined'&&map)map.setCenter(new TMap.LatLng(d.pois[0].lat,d.pois[0].lng)); }catch(e2){} }
   document.getElementById('day-total').innerHTML=
     '<span>'+dest+' 共 '+expanded.length+' 个点位'+(linkTxt?'（含周边联动）':'')+' · 分 '+days+' 天游览</span><b>'+fmtMoney(expanded.reduce(function(s,p){return s+p.budget},0))+'</b>';
 }
@@ -3848,17 +3848,34 @@ function mkPinStar(color){
     '</svg>';
   return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
-function renderMap(dest,pois,theme){
+/* 分类取色兜底：库内存在 cave/mountain/temple/transit 等未单独配色的分类（35 个点位），
+   直接取 cats[p.cat] 会抛错并中断整张地图的渲染，这里统一回退到相近分类色 */
+function catOf(p){
+  if(!p)return cats.scenic;
+  if(cats[p.cat])return cats[p.cat];
+  if(p.cat==='transit')return cats.transport;
+  if(p.cat==='museum'||p.cat==='temple'||p.cat==='ancient')return cats.culture;
+  return cats.scenic;
+}
+function renderMap(dest,pois,theme,usedIdx){
   if(typeof TMap==='undefined')return;
   if(marker){try{marker.setMap(null)}catch(e){}marker=null}
   if(polyline){try{polyline.setMap(null)}catch(e){}polyline=null}
   if(infoWin){try{infoWin.close()}catch(e){}}
   if(!pois||pois.length===0)return;
 
+  /* usedIdx：已排入主行程的点位下标；未排入的用灰色小标记区分（加游备选），
+     保证地图打点与左侧行程卡片一一对应，不再出现"地图有、行程无" */
+  var hasExtra=false;
   var styles={};
   pois.forEach(function(p,i){
-    var c=cats[p.cat].color;
-    styles['m'+i]=new TMap.MarkerStyle({width:36,height:48,anchor:{x:18,y:48},src:mkIcon(i+1,c)});
+    var isExtra=!!(usedIdx&&!usedIdx[i]);
+    if(isExtra)hasExtra=true;
+    var c=catOf(p).color;
+    styles['m'+i]=new TMap.MarkerStyle({
+      width:isExtra?28:36,height:isExtra?37:48,anchor:{x:isExtra?14:18,y:isExtra?37:48},
+      src:mkIcon(i+1,isExtra?'#9AA5B4':c)
+    });
   });
   var geos=pois.map(function(p,i){
     if(!p.lat||!p.lng)return null;
@@ -3869,12 +3886,22 @@ function renderMap(dest,pois,theme){
   marker.on('click',function(evt){
     if(evt.geometry&&evt.geometry.properties){var idx=evt.geometry.properties.index;flyTo(pois,idx);hlCard(idx);}
   });
-  var paths=geos.map(function(g){return g.position});
+  /* 连线只串主行程点位，备选点位不参与路线（避免路线绕行到未安排的点） */
+  var mainGeos=usedIdx?geos.filter(function(g){return usedIdx[g.properties.index];}):geos;
+  if(mainGeos.length<2)mainGeos=geos;
+  var paths=mainGeos.map(function(g){return g.position});
   polyline=new TMap.MultiPolyline({
     map:map,
     styles:{'r':new TMap.PolylineStyle({color:'rgba(255,77,79,.85)',width:4,borderWidth:2,borderColor:'#fff',lineCap:'round',dashArray:[0,0]})},
     geometries:[{id:'route',styleId:'r',paths:paths}]
   });
+  /* 图例补充"加游备选"说明 */
+  if(hasExtra){
+    var lb=document.getElementById('legend');
+    if(lb&&lb.innerHTML.indexOf('加游备选')<0){
+      lb.innerHTML+='<div class="legend-item"><span class="legend-dot" style="background:#9AA5B4"></span>加游备选</div>';
+    }
+  }
   fitBounds(pois);
 }
 /* ============ 每日时间轴重算：一天按完整24小时，各天独立从上午开始 ============ */
@@ -3961,11 +3988,39 @@ function renderCards(pois, days){
   });
   var totalSights=groups.reduce(function(s,g){return s+g.sights.length},0);
 
-  /* 均衡分天：总景点平铺到每一天（保证每天节奏一致），不足 3 个/天的用"自由安排"补齐 */
+  /* 分天策略：
+     ① 单城市 / 天数不足以覆盖城市段数：按景点数平铺均分（原行为，单城结果完全一致）；
+     ② 跨城串联且天数 ≥ 城市段数：按"城市段"分天（每段至少 1 天，余下天数按各段景点数分配），
+        切分点严格落在城市边界 —— 否则会出现"DAY1 已在洛阳、DAY2 又从郑州出发去洛阳"的矛盾 */
   var shares=[];
   {
-    var base=Math.floor(totalSights/days), rem=totalSights%days;
-    for(var si=0;si<days;si++)shares.push(base+(si<rem?1:0));
+    var segIdx=[]; /* 有景点的城市段（被交通卡分隔） */
+    groups.forEach(function(g,gi){ if(g.sights.length)segIdx.push(gi); });
+    if(segIdx.length>1&&days>=segIdx.length){
+      var dAlloc={};segIdx.forEach(function(gi){dAlloc[gi]=1;});
+      var remD=days-segIdx.length;
+      var sortOrder=segIdx.slice().sort(function(a,b){return groups[b].sights.length-groups[a].sights.length;});
+      var dk=0;
+      while(remD>0){dAlloc[sortOrder[dk%sortOrder.length]]++;remD--;dk++;}
+      segIdx.forEach(function(gi){
+        var n=groups[gi].sights.length,dd=dAlloc[gi];
+        for(var x=0;x<dd;x++)shares.push(Math.floor(n/dd)+(x<n%dd?1:0));
+      });
+    }else{
+      var gal=groups.map(function(g){return g.sights.length;});
+      var gI=0,totLeft=totalSights,dayLeft=days;
+      for(var s=0;s<days;s++){
+        var quota=Math.ceil(totLeft/dayLeft);
+        var take=0;
+        while(take<quota&&gI<gal.length){
+          var leftQ=quota-take;
+          if(gal[gI]<=leftQ){take+=gal[gI];gal[gI]=0;gI++;}
+          else{take+=leftQ;gal[gI]-=leftQ;break;}
+        }
+        shares.push(take);
+        totLeft-=take;dayLeft--;
+      }
+    }
   }
 
   /* 展平为队列原子：tr（交通）/sight（景点），保留城市分组边界 */
@@ -3978,6 +4033,18 @@ function renderCards(pois, days){
   var anchor=null; /* 前一天最后位置，作为次日排序起点 */
   var freeIdx=0; /* 自由安排模板轮换指针 */
   var segments=[];
+  var skipped=[]; /* 因时间/天数限制未排入主行程的点位（统一列入"加游备选"，保证与地图打点一致） */
+  var aGi={}; /* 景点 POI 下标 → 所属"城市段"编号（与 groups 索引一致，用于把午餐候选限定在同一段内） */
+  {
+    var gCur=-1;
+    pois.forEach(function(p,pi){
+      if(p.cat==='transport'){gCur++;}
+      else{
+        if(gCur<0)gCur=0;
+        if(p.cat!=='food')aGi[pi]=gCur;
+      }
+    });
+  }
 
   for(var s=0;s<days;s++){
     var atoms=[],cnt=0;
@@ -3987,11 +4054,22 @@ function renderCards(pois, days){
       if(a.type==='sight')cnt++;
     }
     var nReal=atoms.filter(function(x){return x.type==='sight'}).length;
+    /* 本天午餐候选：只在本天所涉"城市段"的美食里挑，避免在 A 城游览却推荐 B 城的餐厅（跨城取菜） */
+    var dayFoods=[];
+    {
+      var daySeg={};
+      atoms.forEach(function(a){ if(a.type==='sight'&&a.gi!==undefined)daySeg[a.gi]=1; });
+      Object.keys(daySeg).forEach(function(k){
+        var gd=groups[k];
+        if(gd&&gd.foods)gd.foods.forEach(function(f){dayFoods.push(f);});
+      });
+    }
     /* 真实景点不足 3 个的天，用"自由安排"推荐卡补齐（模板可循环），保证每天有完整行程 */
     var fillers=[];
     for(var fj=0;fj<Math.max(0,3-nReal);fj++)fillers.push(freeTpl[freeIdx++%freeTpl.length]);
     var hasPois=nReal>0||fillers.length>0;
     var items=[]; /* {p,kind,t} kind: tr/sight/lunch/hotel */
+    var dayEnd=9*60; /* 当天最后一项结束时刻（供收尾卡/备选卡使用） */
     if(hasPois){
       var curT=9*60,prev=anchor,lunchDone=false;
       /* 按原子流处理：连续景点段做贪心最近邻排序 */
@@ -3999,6 +4077,9 @@ function renderCards(pois, days){
       while(i<atoms.length){
         if(atoms[i].type==='tr'){
           var tr=atoms[i].p;
+          /* 游标已越过当天封顶（22:30）时，交通卡时刻一并钳制：
+             否则 fmtHM 取模会显示成次日凌晨（如 25:30 → 01:30），出现"20:15 → 01:30"的假时间轴 */
+          if(curT>22*60+30)curT=22*60+30;
           tr.dispTime=fmtHM(curT);
           items.push({p:tr,kind:'tr'});
           curT+=Math.max(60,parseDurMin(tr.dur))+30; /* 城际/到站缓冲 */
@@ -4016,16 +4097,18 @@ function renderCards(pois, days){
               .sort(function(a,b){if(a.n!==b.n)return a.n?1:-1;return a.idx-b.idx;})
               .map(function(x){return x.p;});
         run.forEach(function(p){
-          /* 22:00 后不再推景点/交通，避免累加跨越隔天（之前会出现 27:43 之类的隔天时间） */
-          if(curT>=22*60)return;
+          /* 22:00 后不再排入主行程（避免累加跨越隔天），超出的点位转入"加游备选"而非直接丢弃 */
+          if(curT>=22*60){skipped.push(p);return;}
           var tt=transitMin(prev,p);
-          /* 午餐窗口 11:40-14:00：先插午餐再进景点（超 14:00 不再插午餐，交给兜底逻辑）
-             另加 curT<13:00 保护：curT 已过中午仍硬插 13:00 午餐会出现在晚间景点之后，时间倒序 */
-          if(!lunchDone&&curT<13*60&&curT+tt>=11*60+40&&curT+tt<=14*60){
+          /* 午餐窗口：即将进入午餐时段（11:40 起）且当天尚未用餐时，先就近用餐再进景点。
+             上界用 curT<14:30（而非"到点后仍 ≤14:00"）：故宫等 3h 长景点会把游标推到 14:00 左右，
+             旧条件会直接跳过午餐，导致库内美食 POI 排不进行程（只出现在地图上）。
+             lt=curT+min(tt,20) 恒 ≥ curT，保证时间轴单调不倒退 */
+          if(!lunchDone&&curT<14*60+30&&curT+tt>=11*60+40){
             var lt=curT+Math.min(tt,20);
             var best=null,bd=Infinity;
-            pois.forEach(function(f){
-              if(f.cat!=='food'||usedFood[pois.indexOf(f)])return;
+            dayFoods.forEach(function(f){
+              if(usedFood[pois.indexOf(f)])return;
               var d=transitMin(prev,f);if(d<bd){bd=d;best=f;}
             });
             var bestIdx=best?pois.indexOf(best):-1;
@@ -4055,8 +4138,8 @@ function renderCards(pois, days){
         if(!lunchDone&&curT+tt>=11*60+40&&curT+tt<=14*60){
           var lt=curT+Math.min(tt,20);
           var bestF=null,bdF=Infinity;
-          pois.forEach(function(f){
-            if(f.cat!=='food'||usedFood[pois.indexOf(f)])return;
+          dayFoods.forEach(function(f){
+            if(usedFood[pois.indexOf(f)])return;
             var d=transitMin(prev,f);if(d<bdF){bdF=d;bestF=f;}
           });
           var bfI=bestF?pois.indexOf(bestF):-1;
@@ -4074,14 +4157,15 @@ function renderCards(pois, days){
         items.push({p:{name:tp.name,cat:'free',dur:tp.dur,synthetic:true,desc:tp.desc},kind:'free',t:fmtHM(curT)});
         curT+=parseDurMin(tp.dur)+15;
       });
-      /* 兜底午餐（全天未插入午餐时，补在 11:30-13:00 窗口）
-         保护：curT≥13:00 表示当天已过午餐窗口，硬塞 13:00 午餐会跑到晚间景点之后，
-         造成"20:00 后跟着 13:00"时间倒序。已晚的天跳过午餐，仅依赖景点内美食/晚餐自然覆盖 */
-      if(!lunchDone&&curT<13*60){
-        var lt2=Math.min(Math.max(curT,11*60+30),13*60);
+      /* 兜底午餐（全天未插入午餐时补在合适时段）
+         保护：curT≥14:30 表示当天午餐窗口已过（如故宫 3h 等长景点把行程推到下午），
+         不再硬塞午餐，避免"20:00 后跟着 13:00"的时间倒序。
+         插入时刻取 lt2=max(curT,11:30)，恒 ≥ 当天已排内容结束时刻，天然保证时间单调 */
+      if(!lunchDone&&curT<14*60+30){
+        var lt2=Math.max(curT,11*60+30);
         var best2=null,bd2=Infinity;
-        pois.forEach(function(f,fi){
-          if(f.cat!=='food'||usedFood[fi])return;
+        dayFoods.forEach(function(f){
+          if(usedFood[pois.indexOf(f)])return;
           var d=transitMin(prev,f);if(d<bd2){bd2=d;best2=f;}
         });
         var bi2=best2?pois.indexOf(best2):-1;
@@ -4101,8 +4185,46 @@ function renderCards(pois, days){
         items.push({p:{name:hn,cat:'hotel',dur:'休整',synthetic:true,anchor:prev},kind:'hotel',t:fmtHM(ht)});
       }
       anchor=prev;
+      dayEnd=curT;
     }
-    segments.push({day:s+1,items:items,hasPois:hasPois,nSight:nReal,nFree:fillers.length});
+    segments.push({day:s+1,items:items,hasPois:hasPois,nSight:nReal,nFree:fillers.length,endT:dayEnd});
+  }
+
+  /* ===== 与地图打点一一对应：队列剩余的交通卡（如"返程"）补到当天末尾 ===== */
+  var lastSeg=null;
+  for(var li=segments.length-1;li>=0;li--){ if(segments[li].hasPois){lastSeg=segments[li];break;} }
+  if(queue.length&&lastSeg){
+    queue.forEach(function(a){
+      if(a.type!=='tr')return;
+      var tr=a.p;
+      var tv=Math.min(22*60+30,Math.max(9*60,(lastSeg.endT||18*60)+30));
+      tr.dispTime=fmtHM(tv);
+      lastSeg.items.push({p:tr,kind:'tr'});
+      lastSeg.endT=Math.max(lastSeg.endT||0,tv);
+    });
+  }
+
+  /* ===== 汇总已排入主行程的点位下标 ===== */
+  var usedIdx={};
+  segments.forEach(function(sg){
+    sg.items.forEach(function(it){
+      if(it.p&&!it.p.synthetic){var oi=pois.indexOf(it.p);if(oi>=0)usedIdx[oi]=1;}
+    });
+  });
+  /* 未排入主行程的点位统一归入"加游备选"：剩余队列（天数不足）+ 未入行程的点位（含未用作午餐的美食），
+     避免出现"地图上有标记、行程里找不到"的错位 */
+  queue.forEach(function(a){ if(a.type==='sight'&&a.p&&skipped.indexOf(a.p)<0)skipped.push(a.p); });
+  pois.forEach(function(p,pi){
+    if(p.cat!=='transport'&&!usedIdx[pi]&&skipped.indexOf(p)<0)skipped.push(p);
+  });
+  if(skipped.length){
+    var extraItems=[];
+    skipped.forEach(function(p){
+      if(!p)return;
+      delete p.dispTime; /* 备选点位不参与时间轴，卡片显示"加游" */
+      extraItems.push({p:p,kind:'extra'});
+    });
+    segments.push({day:0,items:extraItems,hasPois:true,isExtra:true,nSight:0,nFree:0});
   }
 
   var globalIdx=0; // 用于动画延迟（仅视觉，不影响 index）
@@ -4111,7 +4233,9 @@ function renderCards(pois, days){
     var segBudget=seg.items.reduce(function(s,it){return s+(it.p.budget||0)},0);
     var dh=document.createElement('div');
     dh.className='seg-head';
-    dh.innerHTML='<span class="seg-day">DAY '+seg.day+'</span><span class="seg-meta">'+
+    dh.innerHTML=seg.isExtra
+      ? '<span class="seg-day">加游备选</span><span class="seg-meta">'+seg.items.length+' 个点位 · 主行程时间有限未排入 · 点击卡片可定位地图</span>'
+      : '<span class="seg-day">DAY '+seg.day+'</span><span class="seg-meta">'+
       (seg.hasPois?(seg.nSight+' 个景点'+(seg.nFree?' + '+seg.nFree+' 项自由安排':'')+' · 含午餐/住宿推荐 · 预算 '+fmtMoney(segBudget)):'自由活动 / 机动时间')+
       '</span>';
     box.appendChild(dh);
@@ -4133,23 +4257,25 @@ function renderCards(pois, days){
     seg.items.forEach(function(it){
       var p=it.p;
       var isSyn=!!p.synthetic;
-      var c=(p.cat==='hotel')?hotelCat:(p.cat==='free'?freeCat:(cats[p.cat]||cats.scenic));
+      var c=(p.cat==='hotel')?hotelCat:(p.cat==='free'?freeCat:catOf(p));
       var origIdx=isSyn?-1:pois.indexOf(p);
       var el=document.createElement('div');
       el.className='card';el.style.setProperty('--cc',c.color);
       if(isSyn)el.style.border='1.5px dashed '+c.color+'66'; /* 推荐卡虚线边框 */
       el.style.animationDelay=(globalIdx*60)+'ms';
-      var timeStr=isSyn?(it.t||'--'):(p.dispTime||p.time);
-      var kindName=(it.kind==='lunch')?'午餐':(it.kind==='hotel')?'住宿':(it.kind==='free'?'自由':c.name);
+      var timeStr=(it.kind==='extra')?'加游':(isSyn?(it.t||'--'):(p.dispTime||p.time));
+      var kindName=(it.kind==='lunch')?'午餐':(it.kind==='hotel')?'住宿':(it.kind==='free'?'自由':(it.kind==='extra'?'备选':c.name));
+      var tagName=(it.kind==='extra')?'加游备选':(kindName+'推荐');
       var desc=p.desc;
       if(isSyn&&it.kind==='lunch')desc='午餐时段，就近选择老字号或商场餐饮层，用餐约 1 小时，饭后稍作休整再出发。';
       if(isSyn&&it.kind==='hotel')desc='当日行程集中于此区域，推荐就近入住，省去往返交通。周边餐饮配套通常也较完善，次日出发更从容。';
+      if(it.kind==='extra')desc='主行程时间有限未排入，可作为加游备选：延长半日/一天即可顺路前往（点击卡片可定位地图）。'+(desc||'');
       el.innerHTML=
         (isSyn?'':'<span class="goto">📍 地图定位</span>')+
         '<div class="card-l"><div class="t-badge">'+timeStr+'</div><div class="t-sub">'+kindName+'</div><div class="t-dot"></div></div>'+
         '<div class="card-m">'+
           '<div class="card-top">'+(isSyn?'':'<span class="seq-num">'+(origIdx+1)+'</span>')+
-            '<span class="cat-tag" style="background:'+c.bg+';color:'+c.color+'">'+kindName+'推荐</span><span class="p-name">'+p.name+'</span></div>'+
+            '<span class="cat-tag" style="background:'+c.bg+';color:'+c.color+'">'+tagName+'</span><span class="p-name">'+p.name+'</span></div>'+
           (p.transit?'<div class="transit-line">🚌 '+p.transit+'</div>':'')+
           (desc?'<p class="p-desc">'+desc+'</p>':'')+
           '<div class="card-bot">'+
@@ -4168,9 +4294,10 @@ function renderCards(pois, days){
     });
   });
   activeIdx=-1;
+  return usedIdx; /* 已排入主行程的点位下标，供 renderMap 区分主行程/加游备选样式 */
 }
 function flyTo(pois,idx){
-  var p=pois[idx],c=cats[p.cat],tgt=new TMap.LatLng(p.lat,p.lng);
+  var p=pois[idx],c=catOf(p),tgt=new TMap.LatLng(p.lat,p.lng);
   if(infoWin&&p.desc){
     try{
       infoWin.setPosition(tgt);
